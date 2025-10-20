@@ -1,0 +1,130 @@
+/* Font Awesome Icons - Version locale complète */
+@font-face {
+    font-family: 'FontAwesome';
+    src: url('./webfonts/fa-solid-900.woff2') format('woff2'),
+         url('./webfonts/fa-solid-900.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'FontAwesome Brands';
+    src: url('./webfonts/fa-brands-400.woff2') format('woff2'),
+         url('./webfonts/fa-brands-400.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: 'FontAwesome Regular';
+    src: url('./webfonts/fa-regular-400.woff2') format('woff2'),
+         url('./webfonts/fa-regular-400.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
+/* Classes de base */
+.fas, .fa-solid {
+    font-family: 'FontAwesome';
+    font-weight: 900;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    display: var(--fa-display, inline-block);
+    font-style: normal;
+    font-variant: normal;
+    line-height: 1;
+    text-rendering: auto;
+}
+
+.fab, .fa-brands {
+    font-family: 'FontAwesome Brands';
+    font-weight: 400;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    display: var(--fa-display, inline-block);
+    font-style: normal;
+    font-variant: normal;
+    line-height: 1;
+    text-rendering: auto;
+}
+
+.far, .fa-regular {
+    font-family: 'FontAwesome Regular';
+    font-weight: 400;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    display: var(--fa-display, inline-block);
+    font-style: normal;
+    font-variant: normal;
+    line-height: 1;
+    text-rendering: auto;
+}
+
+/* Animation du spinner */
+.fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* === TOUTES LES ICÔNES UTILISÉES === */
+
+/* Icônes principales de l'application */
+.fa-project-diagram::before { content: "\f542"; }
+.fa-cloud-upload-alt::before { content: "\f382"; }
+.fa-folder-open::before { content: "\f07c"; }
+.fa-filter::before { content: "\f0b0"; }
+.fa-search::before { content: "\f002"; }
+.fa-download::before { content: "\f019"; }
+.fa-image::before { content: "\f03e"; }
+.fa-file-pdf::before { content: "\f1c1"; }
+.fa-code::before { content: "\f121"; }
+.fa-expand::before { content: "\f065"; }
+.fa-compress::before { content: "\f066"; }
+.fa-sync::before { content: "\f021"; }
+.fa-sitemap::before { content: "\f0e8"; }
+.fa-info-circle::before { content: "\f05a"; }
+.fa-mouse-pointer::before { content: "\f245"; }
+.fa-cube::before { content: "\f1b2"; }
+.fa-terminal::before { content: "\f120"; }
+.fa-exchange-alt::before { content: "\f362"; }
+.fa-question::before { content: "\f128"; }
+.fa-spinner::before { content: "\f110"; }
+.fa-id-card::before { content: "\f2c2"; }
+.fa-server::before { content: "\f233"; }
+.fa-calendar-alt::before { content: "\f073"; }
+.fa-link::before { content: "\f0c1"; }
+.fa-cogs::before { content: "\f085"; }
+
+/* Icônes du modal À propos */
+.fa-user::before { content: "\f007"; }
+.fa-user-circle::before { content: "\f2bd"; }
+.fa-envelope::before { content: "\f0e0"; }
+.fa-phone::before { content: "\f095"; }
+.fa-map-marker-alt::before { content: "\f3c5"; }
+.fa-calendar::before { content: "\f133"; }
+.fa-user-tie::before { content: "\f508"; }
+.fa-times::before { content: "\f00d"; }
+
+/* Icônes supplémentaires pour les détails */
+.fa-id-card::before { content: "\f2c2"; }
+.fa-terminal::before { content: "\f120"; }
+.fa-server::before { content: "\f233"; }
+.fa-calendar-alt::before { content: "\f073"; }
+.fa-link::before { content: "\f0c1"; }
+.fa-cogs::before { content: "\f085"; }
+
+.fa-redo::before { content: "\f01e"; }
+.fa-play::before { content: "\f04b"; }
+.fa-pause::before { content: "\f04c"; }
+.fa-play-circle::before { content: "\f144"; }
