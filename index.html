@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autosys JIL Viewer</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="assets/fonts/fontawesome.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Header - SUR TOUTE LA PAGE -->
+        <header class="main-header">
+            <div class="header-left">
+                <h1><i class="fas fa-project-diagram"></i> JIL Viewer</h1>
+            </div>
+            <div class="header-right">
+                <button class="btn-action" id="expandAll">
+                    <i class="fas fa-expand"></i> Tout déplier
+                </button>
+                <button class="btn-action" id="collapseAll">
+                    <i class="fas fa-compress"></i> Tout replier
+                </button>
+                <button class="btn-action" id="resetView">
+                    <i class="fas fa-sync"></i> Réinitialiser
+                </button>
+                <!-- Bouton À propos -->
+                <button class="btn-action" id="aboutBtn">
+                    <i class="fas fa-info-circle"></i> À propos
+                </button>
+            </div>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-content">
+                    <!-- Upload Section -->
+                    <div class="upload-section">
+                        <div class="file-upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h3>Charger un fichier JIL</h3>
+                            <p>Glissez-déposez ou cliquez pour sélectionner</p>
+                            <input type="file" id="fileInput" accept=".jil,.txt" hidden>
+                            <button class="btn-primary" id="browseBtn">
+                                <i class="fas fa-folder-open"></i> Parcourir
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters Section -->
+                    <div class="filters-section">
+                        <h3><i class="fas fa-filter"></i> Filtres</h3>
+                        <div class="filter-group">
+                            <label for="searchFilter">Rechercher un job:</label>
+                            <div class="search-input">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="searchFilter" placeholder="Nom du job ou description...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div class="export-section">
+                        <h3><i class="fas fa-download"></i> Export</h3>
+                        <div class="export-buttons">
+                            <button class="btn-export" id="exportPNG">
+                                <i class="fas fa-image"></i> PNG
+                            </button>
+                            <button class="btn-export" id="exportPDF">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
+                            <button class="btn-export" id="exportHTML">
+                                <i class="fas fa-code"></i> HTML
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-area">
+                    <!-- Tree -->
+                    <div class="tree-section">
+                        <div class="section-header">
+                            <div class="section-title">
+                                <h3><i class="fas fa-sitemap"></i> Arborescence des Jobs</h3>
+                                <div class="file-status" id="fileStatus">
+                                    <span class="file-info" id="fileInfo">Aucun fichier chargé</span>
+                                </div>
+                            </div>
+                            <span class="counter" id="jobCounter">0 jobs</span>
+                        </div>
+                        <div id="treeContainer" class="tree-container">
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open"></i>
+                                <h3>Aucun fichier JIL chargé</h3>
+                                <p>Chargez un fichier JIL pour commencer</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détails -->
+                    <div class="details-section">
+                        <div class="section-header">
+                            <h3><i class="fas fa-info-circle"></i> Détails du Job</h3>
+                        </div>
+                        <div id="detailsPanel" class="details-panel">
+                            <div class="empty-details">
+                                <i class="fas fa-mouse-pointer"></i>
+                                <p>Sélectionnez un job pour voir ses détails</p>
+                            </div>
+                            <div id="detailsContent" class="details-content hidden"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal À propos -->
+    <div id="aboutModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> À propos de JIL Viewer</h3>
+                <button class="modal-close" id="closeAboutModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="about-content">
+                    <div class="app-info">
+                        <h4>Application JIL Viewer</h4>
+                        <p>Outil de visualisation et d'analyse des fichiers JIL Autosys</p>
+                        <div class="version">Version 1.0.0</div>
+                    </div>
+                    
+                    <div class="developer-card">
+                        <div class="dev-avatar">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="dev-details">
+                            <h5>Moez SELMI</h5>
+                            <p>DevOps</p>
+                            <div class="dev-contact">
+                                <div class="contact-item">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>moez.selmi.external@banque-france.fr</span>
+                                </div>
+                                <div class="contact-item">
+                                    <i class="fas fa-phone"></i>
+                                    <span>+33 1 61 44 20 17</span>
+                                </div>
+                                <div class="contact-item">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Paris, France</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--div class="features-list">
+                        <h5>Fonctionnalités :</h5>
+                        <ul>
+                            <li>Visualisation hiérarchique des jobs Autosys</li>
+                            <li>Filtrage et recherche</li>
+                            <li>Export PNG, PDF et HTML</li>
+                        </ul>
+                    </div-->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Chargement du fichier...</p>
+        </div>
+    </div>
+
+    <script src="lib/html2canvas.min.js"></script>
+    <script src="lib/jspdf.umd.min.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
