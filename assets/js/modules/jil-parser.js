@@ -22,16 +22,81 @@ export class JILParser {
 
         for (let i = 0; i < lines.length; i++) {
             let line = lines[i].trim();
-            line = this.processComments(line, inCommentBlock);
-            if (line === null) continue;
+
+            if (line.startsWith('/*')) {
+                inCommentBlock = true;
+                if (line.includes('*/')) {
+                    inCommentBlock = false;
+                }
+                continue;
+            }
+            
+            if (inCommentBlock) {
+                if (line.includes('*/')) {
+                    inCommentBlock = false;
+                }
+                continue;
+            }
+
+            if (line.startsWith('/*') && line.includes('---') && line.endsWith('*/')) {
+                continue;
+            }
+
+            if (line === '') {
+                if (currentJob) {
+                    this.finalizeJob(currentJob);
+                    jobCount++;
+                    currentJob = null;
+                }
+                continue;
+            }
+
+            if (line.startsWith('//')) {
+                continue;
+            }
+
+            const commentIndex = line.indexOf('//');
+            if (commentIndex !== -1) {
+                line = line.substring(0, commentIndex).trim();
+            }
 
             if (line.startsWith('insert_job:')) {
                 if (currentJob) {
                     this.finalizeJob(currentJob);
                     jobCount++;
                 }
-                currentJob = this.createJobFromLine(line, jobCount);
-            } else if (currentJob && line.includes(':')) {
+
+                const afterInsertJob = line.substring(11);
+                let jobName = afterInsertJob;
+                let remainingLine = '';
+                
+                const nextAttributeIndex = afterInsertJob.search(/\s+(job_type|box_name|command|machine|owner|description|alarm_if_fail|alarm_if_terminated|group|application|condition):/i);
+                
+                if (nextAttributeIndex !== -1) {
+                    jobName = afterInsertJob.substring(0, nextAttributeIndex).trim();
+                    remainingLine = afterInsertJob.substring(nextAttributeIndex).trim();
+                } else {
+                    jobName = afterInsertJob.trim();
+                }
+
+                currentJob = {
+                    name: jobName,
+                    type: 'UNKNOWN',
+                    children: [],
+                    parent: null,
+                    attributes: {},
+                    description: '',
+                    originalIndex: jobCount,
+                    depth: 0,
+                    dependsOn: [],
+                    requiredBy: []
+                };
+
+                if (remainingLine) {
+                    this.processAttributesFromLine(currentJob, remainingLine);
+                }
+            }
+            else if (currentJob && line.includes(':')) {
                 this.processAttributesFromLine(currentJob, line);
             }
         }
@@ -50,72 +115,6 @@ export class JILParser {
             rootBoxes: this.rootBoxes,
             executionOrder: this.executionOrder
         };
-    }
-
-    processComments(line, inCommentBlock) {
-        if (line.startsWith('/*')) {
-            inCommentBlock = true;
-            if (line.includes('*/')) {
-                inCommentBlock = false;
-            }
-            return null;
-        }
-        
-        if (inCommentBlock) {
-            if (line.includes('*/')) {
-                inCommentBlock = false;
-            }
-            return null;
-        }
-
-        if (line.startsWith('/*') && line.includes('---') && line.endsWith('*/')) {
-            return null;
-        }
-
-        if (line === '') return null;
-
-        if (line.startsWith('//')) return null;
-
-        const commentIndex = line.indexOf('//');
-        if (commentIndex !== -1) {
-            line = line.substring(0, commentIndex).trim();
-        }
-
-        return line;
-    }
-
-    createJobFromLine(line, jobCount) {
-        const afterInsertJob = line.substring(11);
-        let jobName = afterInsertJob;
-        let remainingLine = '';
-        
-        const nextAttributeIndex = afterInsertJob.search(/\s+(job_type|box_name|command|machine|owner|description|alarm_if_fail|alarm_if_terminated|group|application|condition):/i);
-        
-        if (nextAttributeIndex !== -1) {
-            jobName = afterInsertJob.substring(0, nextAttributeIndex).trim();
-            remainingLine = afterInsertJob.substring(nextAttributeIndex).trim();
-        } else {
-            jobName = afterInsertJob.trim();
-        }
-
-        const job = {
-            name: jobName,
-            type: 'UNKNOWN',
-            children: [],
-            parent: null,
-            attributes: {},
-            description: '',
-            originalIndex: jobCount,
-            depth: 0,
-            dependsOn: [],
-            requiredBy: []
-        };
-
-        if (remainingLine) {
-            this.processAttributesFromLine(job, remainingLine);
-        }
-
-        return job;
     }
 
     processAttributesFromLine(job, line) {

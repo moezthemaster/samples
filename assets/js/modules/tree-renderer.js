@@ -44,10 +44,22 @@ export class TreeRenderer {
             header.classList.add('search-match');
         }
         
+        let conditionIcon = '';
+        if (box.attributes.condition) {
+            conditionIcon = '<i title="A des dépendances"></i>';
+        }
+        
+        let boxIndicator = '';
+        if (box.type === 'BOX') {
+            boxIndicator = ' ';
+        }
+        
         header.innerHTML = `
             <i class="${this.getIconForType(box.type)}"></i>
-            <span class="job-name">${box.name}</span>
+            <span class="job-name">${box.name}${boxIndicator}</span>
+            ${conditionIcon}
         `;
+
         header.addEventListener('click', (e) => {
             e.stopPropagation();
             node.classList.toggle('expanded');
@@ -79,6 +91,27 @@ export class TreeRenderer {
             case 'CMD': return 'fas fa-terminal';
             case 'FT': return 'fas fa-exchange-alt';
             default: return 'fas fa-question';
+        }
+    }
+
+    selectJob(job) {
+        document.querySelectorAll('.tree-node.selected').forEach(item => {
+            item.classList.remove('selected');
+        });
+
+        const allNodes = document.querySelectorAll('.tree-node');
+        let targetNode = null;
+        
+        for (let node of allNodes) {
+            const jobNameElement = node.querySelector('.job-name');
+            if (jobNameElement && jobNameElement.textContent.trim().replace(' ', '') === job.name) {
+                targetNode = node;
+                break;
+            }
+        }
+
+        if (targetNode) {
+            targetNode.classList.add('selected');
         }
     }
 
