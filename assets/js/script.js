@@ -11,7 +11,7 @@ class AutosysViewer {
         this.selectedJob = null;
         this.currentFileContent = null;
         
-        // Initialiser les modules
+        // init modules
         this.jilParser = new JILParser();
         this.treeRenderer = new TreeRenderer(this);
         this.exportManager = new ExportManager(this);
@@ -151,14 +151,14 @@ class AutosysViewer {
         const importantAttributes = ['command', 'machine', 'owner', 'condition', 'date_conditions', 'start_times', 'run_calendar', 'exclude_calendar'];
         
         let dependenciesHTML = '';
-        if (job.dependsOn.length > 0 || job.requiredBy.length > 0) {
+        if (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) {
             dependenciesHTML = `
             <div class="detail-section">
-                <h4><i class="fas fa-link"></i> Dépendances</h4>
+                <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
                 ${job.attributes.condition ? `
                 <div class="detail-item">
                     <span class="detail-label">Condition:</span>
-                    <span class="detail-value">${job.attributes.condition}</span>
+                    <span class="detail-value condition-code">${this.formatCondition(job.attributes.condition)}</span>
                 </div>
                 ` : ''}
                 ${job.dependsOn.length > 0 ? `
@@ -269,6 +269,16 @@ class AutosysViewer {
         `;
     }
 
+    formatCondition(condition) {
+        if (!condition) return '';
+
+        let formatted = condition.replace(/(v\([^)]+\))/g, '<span class="global-variable" title="Variable globale">$1</span>');
+        
+        formatted = formatted.replace(/(&|\|)/g, '<span class="logic-operator"> $1 </span>');
+        
+        return formatted;
+    }
+
     resetView() {
         document.getElementById('searchFilter').value = '';
         this.applyFilters();
@@ -302,7 +312,7 @@ class AutosysViewer {
     }
 }
 
-// Initialiser l'application
+// init app
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Application Autosys Viewer démarrée - VERSION MODULAIRE');
     window.autosysViewer = new AutosysViewer();

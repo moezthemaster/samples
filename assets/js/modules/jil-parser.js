@@ -159,34 +159,84 @@ export class JILParser {
                 }
         }
     }
+extractDependencies(job, condition) {
+    console.log(`🔍 Analyse des dépendances pour ${job.name}: ${condition}`);
+    
+    if (!condition) return;
 
-    extractDependencies(job, condition) {
-        console.log(`🔍 Analyse des dépendances pour ${job.name}: ${condition}`);
+    // patterns conditions Autosys
+    const patterns = [
+        /(s|success)\(([^)]+)\)/g,           // s(job) ou success(job)
+        /(d|done)\(([^)]+)\)/g,              // d(job) ou done(job)  
+        /(n|notrun)\(([^)]+)\)/g,            // n(job) ou notrun(job)
+        /(f|failure)\(([^)]+)\)/g,           // f(job) ou failure(job)
+        /terminated\(([^)]+)\)/g,            // terminated(job)
+    ];
+    
+    patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(condition)) !== null) {
+            const dependentJob = match[2] || match[1]; // Prendre le job référencé
+            
+            if (dependentJob && !job.dependsOn.includes(dependentJob)) {
+                job.dependsOn.push(dependentJob);
+                console.log(`   📌 ${job.name} → ${dependentJob} (condition: ${match[0]})`);
+            }
+        }
+    });
+}
+
+calculateExecutionOrder() {
+    console.log('🔀 Calcul de l\'ordre d\'exécution par analyse des conditions');
+    
+    const visited = new Set();
+    const order = [];
+
+    const dependencyGraph = new Map();
+    
+    for (const [jobName, job] of this.boxes) {
+        dependencyGraph.set(jobName, new Set(job.dependsOn));
+    }
+
+    const visit = (jobName, path = new Set()) => {
+        if (path.has(jobName)) {
+            console.log(`⚠️ Cycle détecté: ${Array.from(path).join(' → ')} → ${jobName}`);
+            return;
+        }
         
-        const dependencyPatterns = [
-            /success\(([^)]+)\)/g,
-            /failure\(([^)]+)\)/g,
-            /done\(([^)]+)\)/g,
-            /notrun\(([^)]+)\)/g,
-            /terminated\(([^)]+)\)/g
-        ];
+        if (visited.has(jobName)) return;
+
+        path.add(jobName);
         
-        dependencyPatterns.forEach(pattern => {
-            let match;
-            while ((match = pattern.exec(condition)) !== null) {
-                const dependentJobName = match[1];
-                if (dependentJobName && !job.dependsOn.includes(dependentJobName)) {
-                    job.dependsOn.push(dependentJobName);
-                    console.log(`   📌 ${job.name} dépend de ${dependentJobName}`);
-                    
-                    if (!this.dependencies.has(job.name)) {
-                        this.dependencies.set(job.name, []);
-                    }
-                    this.dependencies.get(job.name).push(dependentJobName);
-                }
+        const dependencies = dependencyGraph.get(jobName) || new Set();
+        
+        dependencies.forEach(depName => {
+            if (this.boxes.has(depName)) {
+                visit(depName, new Set(path));
             }
         });
+        
+        path.delete(jobName);
+        
+        if (!visited.has(jobName)) {
+            visited.add(jobName);
+            order.push(jobName);
+        }
+    };
+
+    for (const [jobName, job] of this.boxes) {
+        if (job.dependsOn.length === 0) {
+            visit(jobName);
+        }
     }
+
+    for (const [jobName, job] of this.boxes) {
+        visit(jobName);
+    }
+
+    this.executionOrder = order;
+    console.log('📋 Ordre basé sur les conditions:', this.executionOrder);
+}
 
     finalizeJob(job) {
         this.boxes.set(job.name, job);
