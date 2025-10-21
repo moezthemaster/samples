@@ -1,0 +1,6221 @@
+
+
+/* ----------------- GUE2-D-B-BASCULE_INCIDENT ----------------- */ 
+
+insert_job: GUE2-D-B-BASCULE_INCIDENT   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 0
+description: "A DEFINIR"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-D-B-PRE_CHECK_ORA1 ----------------- */ 
+
+ insert_job: GUE2-D-B-PRE_CHECK_ORA1   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-D-C-pre_set_off_post_check_ora1)
+ box_failure: s(GUE2-D-C-pre_set_on_post_check_ora1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_check_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_check_ora1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: sleep 1
+  machine: gue2_pdbgue2_actif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_on_failover_state_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_on_failover_state_ora1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-failover_state_ora1=ON
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_ora1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_ora1_passif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_pdbgue2_passif_v GUE2-D-C-check_replication_ora1 GUE2-D-B-SWITCH_ORA
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_svtd_ora1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_ora1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_pdbgue2_actif_v GUE2-D-B-BLACKOUT_SUPERVISION
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_svtd_ora1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_svtd_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_svtd_ora1_passif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_pdbgue2_passif_v ORACLE-H-B-GUE2_PDBGUE2_PASSIF ORACLE-Q-B-GUE2_PDBGUE2_PASSIF ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_ora1_actif) & v(ORACLE-UPD-cycle_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_passif) = "STOP"
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_svtd_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_svtd_ora1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_pdbgue2_actif_v ORACLE-H-B-GUE2_PDBGUE2_ACTIF ORACLE-Q-B-GUE2_PDBGUE2_ACTIF ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: f(GUE2-D-C-pre_check_ora1_actif) & v(ORACLE-UPD-cycle_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_actif) = "STOP"
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_off_post_check_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_off_post_check_ora1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_ora1=OFF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_set_off_failover_state_ora1)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_on_post_check_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_on_post_check_ora1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_ora1=ON
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_set_on_failover_state_ora1)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_off_failover_state_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_off_failover_state_ora1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_ORA1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-failover_state_ora1=OFF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_check_ora1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-B-PRE_CHECK_BMQ1 ----------------- */ 
+
+ insert_job: GUE2-D-B-PRE_CHECK_BMQ1   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-D-C-pre_set_off_post_check_bmq1)
+ box_failure: s(GUE2-D-C-pre_set_on_post_check_bmq1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_check_bmq1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_check_bmq1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_BMQ1
+  command: sleep 1
+  machine: gue2_bmq1_actif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_bmq1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_bmq1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_BMQ1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_bmq1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_BMQ
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: f(GUE2-D-C-pre_check_bmq1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_off_post_check_bmq1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_off_post_check_bmq1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_BMQ1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_bmq1=OFF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_check_bmq1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_bmq1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_bmq1_passif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_BMQ1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_bmq1_passif_v GUE2-D-B-XXX
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_bmq1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_on_post_check_bmq1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_on_post_check_bmq1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_BMQ1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_bmq1=ON
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_bmq1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-B-PRE_CHECK_WLF1 ----------------- */ 
+
+ insert_job: GUE2-D-B-PRE_CHECK_WLF1   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-D-C-pre_set_off_post_check_wlf1)
+ box_failure: s(GUE2-D-C-pre_set_on_post_check_wlf1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_check_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_check_wlf1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WLF1
+  command: sleep 1
+  machine: gue2_wlf1_actif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_wlf1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WLF1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_wlf1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_WLF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: f(GUE2-D-C-pre_check_wlf1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_off_post_check_wlf1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_off_post_check_wlf1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WLF1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_wlf1=OFF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_check_wlf1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_wlf1_passif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WLF1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_wlf1_passif_v GUE2-D-B-XXX
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_wlf1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_on_post_check_wlf1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_on_post_check_wlf1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WLF1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_wlf1=ON
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_wlf1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-C-pre_on_ice_post_bascule_incident ----------------- */ 
+
+ insert_job: GUE2-D-C-pre_on_ice_post_bascule_incident   job_type: CMD 
+ box_name: GUE2-D-B-BASCULE_INCIDENT
+ command: sendevent -E JOB_ON_ICE -J GUE2-C-B-POST_BASCULE_INCIDENT
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "A DEFINIR"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-B-PRE_CHECK_WEB1 ----------------- */ 
+
+ insert_job: GUE2-D-B-PRE_CHECK_WEB1   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-D-C-pre_set_off_post_check_web1)
+ box_failure: s(GUE2-D-C-pre_set_on_post_check_web1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_check_web1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_check_web1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WEB1
+  command: sleep 1
+  machine: gue2_web1_actif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_web1_actif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_web1_actif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WEB1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_web1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_WEB
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: f(GUE2-D-C-pre_check_web1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_off_post_check_web1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_off_post_check_web1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WEB1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_web1=OFF
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_check_web1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_on_noexec_web1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_on_noexec_web1_passif   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WEB1
+  command: $${AUTOSYS-FIX-manager_bat}/prepare_bascule_incident.ksh gue2_web1_passif_v GUE2-D-B-XXX
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_web1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-pre_set_on_post_check_web1 ----------------- */ 
+
+  insert_job: GUE2-D-C-pre_set_on_post_check_web1   job_type: CMD 
+  box_name: GUE2-D-B-PRE_CHECK_WEB1
+  command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_web1=ON
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-pre_on_noexec_web1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+/* ----------------- GUE2-D-B-BASCULE ----------------- */ 
+
+insert_job: GUE2-D-B-BASCULE   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 0
+condition: f(GUE2-D-B-BASCULE_INCIDENT)
+description: "Bascule a froid"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-D-B-TEMOIN ----------------- */ 
+
+ insert_job: GUE2-D-B-TEMOIN   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: v(ORACLE-UPD-hebdo_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-cycle_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-cycle_gue2_pdbgue2_passif) = "STOP"
+ description: "Boite temoin pour indiquer le sens de bascule"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-primaire_secours ----------------- */ 
+
+  insert_job: GUE2-D-C-primaire_secours   job_type: CMD 
+  box_name: GUE2-D-B-TEMOIN
+  command: exit 0
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Job d'information du sens de bascule"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-secours_primaire ----------------- */ 
+
+  insert_job: GUE2-D-C-secours_primaire   job_type: CMD 
+  box_name: GUE2-D-B-TEMOIN
+  command: exit 0
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Job d'information du sens de bascule"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-C-init_bascule ----------------- */ 
+
+ insert_job: GUE2-D-C-init_bascule   job_type: CMD 
+ box_name: GUE2-D-B-BASCULE
+ command: $${AUTOSYS-FIX-manager_bat}/gestion_init.sh init_bascule GUE2
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-CHECK_AGENT_PASSIF)
+ description: "Initialisation bascule"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-B-STOP ----------------- */ 
+
+ insert_job: GUE2-D-B-STOP   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-C-delay_bascule)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-BLACKOUT_SUPERVISION ----------------- */ 
+
+  insert_job: GUE2-D-B-BLACKOUT_SUPERVISION   job_type: BOX 
+  box_name: GUE2-D-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "arret supervision"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-blackout_supervision_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-blackout_supervision_wlf1_actif   job_type: CMD 
+   box_name: GUE2-D-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Mise en place du blackout de supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-blackout_supervision_delay ----------------- */ 
+
+   insert_job: GUE2-D-C-blackout_supervision_delay   job_type: CMD 
+   box_name: GUE2-D-B-BLACKOUT_SUPERVISION
+   command: sleep $${SRE-FIX-tempo_supervision}
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Tempo pour que supervision prenne en compte les flags de blackout"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-blackout_supervision_ora1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-blackout_supervision_ora1_actif   job_type: CMD 
+   box_name: GUE2-D-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_pdbgue2_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Mise en place du blackout de supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-blackout_supervision_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-blackout_supervision_bmq1_actif   job_type: CMD 
+   box_name: GUE2-D-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_bmq1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Mise en place du blackout de supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-blackout_supervision_web1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-blackout_supervision_web1_actif   job_type: CMD 
+   box_name: GUE2-D-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_web1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Mise en place du blackout de supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_WLF ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_WLF   job_type: BOX 
+  box_name: GUE2-D-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-B-STOP_BMQ)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_wlf1_actif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_WLF
+   command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret toutes instances Wildfly"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_wlf1_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_wlf1_passif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_WLF
+   command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+   machine: gue2_wlf1_passif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret toutes instances Wildfly"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_BMQ ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_BMQ   job_type: BOX 
+  box_name: GUE2-D-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-B-STOP_WEB)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_bmq1_actif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_BMQ
+   command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+   machine: gue2_bmq1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret du bridgeMQ"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_bmq1_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_bmq1_passif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_BMQ
+   command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+   machine: gue2_bmq1_passif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret du bridgeMQ"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_WEB ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_WEB   job_type: BOX 
+  box_name: GUE2-D-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-B-BLACKOUT_SUPERVISION)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_web1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_web1_actif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_WEB
+   command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+   machine: gue2_web1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "stop scan webverif"
+   max_run_alarm: 10
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-stop_web1_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-stop_web1_passif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_WEB
+   command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+   machine: gue2_web1_passif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "stop scan webverif"
+   max_run_alarm: 10
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-D-B-SWITCH_ORA ----------------- */ 
+
+ insert_job: GUE2-D-B-SWITCH_ORA   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-FAILOVER_ORA)
+ description: "Switch"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-switch_to_standby_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-switch_to_standby_ora1   job_type: CMD 
+  box_name: GUE2-D-B-SWITCH_ORA
+  command: $${ORACLE-FIX-shell}/dg_switch_over.sh
+  machine: gue2_pdbgue2_passif_v
+  owner: cdague2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Passage en mode standby de la base active GUE2"
+  max_run_alarm: 10
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-C-check_servitudes ----------------- */ 
+
+ insert_job: GUE2-D-C-check_servitudes   job_type: CMD 
+ box_name: GUE2-D-B-BASCULE
+ command: exit 0
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: v(GUE2-UPD-servitudes_state) = "STOP" & s(GUE2-D-C-init_bascule)
+ description: "en attente de la fin des servitudes"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-C-delay_bascule ----------------- */ 
+
+ insert_job: GUE2-D-C-delay_bascule   job_type: CMD 
+ box_name: GUE2-D-B-BASCULE
+ command: sleep 60
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-C-check_servitudes)
+ description: "en attente du possible start appli"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-B-START ----------------- */ 
+
+ insert_job: GUE2-D-B-START   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-RESYNC_STATE_ORA)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-ACTIVATION_SUPERVISION ----------------- */ 
+
+  insert_job: GUE2-D-B-ACTIVATION_SUPERVISION   job_type: BOX 
+  box_name: GUE2-D-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-B-CHECK_START)
+  description: "demarrage supervision"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-activation_supervision_ora1_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-activation_supervision_ora1_actif   job_type: CMD 
+   box_name: GUE2-D-B-ACTIVATION_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+   machine: gue2_pdbgue2_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "activation de la supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-CHECK_SPVS ----------------- */ 
+
+   insert_job: GUE2-D-B-CHECK_SPVS   job_type: BOX 
+   box_name: GUE2-D-B-ACTIVATION_SUPERVISION
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   box_success: d(GUE2-D-B-SPVS_ACTIVE) | s(GUE2-D-C-not_spvs)
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-B-SPVS_ACTIVE ----------------- */ 
+
+    insert_job: GUE2-D-B-SPVS_ACTIVE   job_type: BOX 
+    box_name: GUE2-D-B-CHECK_SPVS
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: v(GUE2-UPD-appli_state) = "RUN"
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-activation_supervision_wlf1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-activation_supervision_wlf1_actif   job_type: CMD 
+     box_name: GUE2-D-B-SPVS_ACTIVE
+     command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+     machine: gue2_wlf1_actif_v
+     owner: gue2
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     description: "activation de la supervision"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-C-activation_supervision_bmq1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-activation_supervision_bmq1_actif   job_type: CMD 
+     box_name: GUE2-D-B-SPVS_ACTIVE
+     command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+     machine: gue2_bmq1_actif_v
+     owner: gue2
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     description: "activation de la supervision"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-C-activation_supervision_web1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-activation_supervision_web1_actif   job_type: CMD 
+     box_name: GUE2-D-B-SPVS_ACTIVE
+     command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+     machine: gue2_web1_actif_v
+     owner: gue2
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     description: "activation de la supervision"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+    /* ----------------- GUE2-D-C-not_spvs ----------------- */ 
+
+    insert_job: GUE2-D-C-not_spvs   job_type: CMD 
+    box_name: GUE2-D-B-CHECK_SPVS
+    command: exit 0
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: v(GUE2-UPD-appli_state) = "STOP"
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+  /* ----------------- GUE2-D-B-CHECK_START ----------------- */ 
+
+  insert_job: GUE2-D-B-CHECK_START   job_type: BOX 
+  box_name: GUE2-D-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  box_success: s(GUE2-D-B-START_RUN) | s(GUE2-D-C-not_start)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_RUN ----------------- */ 
+
+   insert_job: GUE2-D-B-START_RUN   job_type: BOX 
+   box_name: GUE2-D-B-CHECK_START
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-appli_state) = "RUN"
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-B-START_WLF ----------------- */ 
+
+    insert_job: GUE2-D-B-START_WLF   job_type: BOX 
+    box_name: GUE2-D-B-START_RUN
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-start_wlf1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-start_wlf1_actif   job_type: CMD 
+     box_name: GUE2-D-B-START_WLF
+     command: $${GUE2-FIX-bat}/wildfly.sh start all
+     machine: gue2_wlf1_actif_v
+     owner: gue2
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     description: "A DEFINIR"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+    /* ----------------- GUE2-D-B-START_BMQ ----------------- */ 
+
+    insert_job: GUE2-D-B-START_BMQ   job_type: BOX 
+    box_name: GUE2-D-B-START_RUN
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-B-START_WLF)
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-start_bmq1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-start_bmq1_actif   job_type: CMD 
+     box_name: GUE2-D-B-START_BMQ
+     command: $${GUE2-FIX-bat}/BridgeMQ.sh -start
+     machine: gue2_wlf1_actif_v
+     owner: gue2
+     permission: gx
+     date_conditions: 0
+     description: "demarrage BridgeMQ"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+    /* ----------------- GUE2-D-B-START_WEB ----------------- */ 
+
+    insert_job: GUE2-D-B-START_WEB   job_type: BOX 
+    box_name: GUE2-D-B-START_RUN
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-B-START_BMQ)
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-start_web1_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-start_web1_actif   job_type: CMD 
+     box_name: GUE2-D-B-START_WEB
+     command: $${GUE2-FIX-bat}/scan_webverif.sh -start
+     machine: gue2_wlf1_actif_v
+     owner: gue2
+     permission: gx
+     date_conditions: 0
+     description: "demarrage scan webverif"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+   /* ----------------- GUE2-D-C-not_start ----------------- */ 
+
+   insert_job: GUE2-D-C-not_start   job_type: CMD 
+   box_name: GUE2-D-B-CHECK_START
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-appli_state) = "STOP"
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-D-C-init_fin_bascule ----------------- */ 
+
+ insert_job: GUE2-D-C-init_fin_bascule   job_type: CMD 
+ box_name: GUE2-D-B-BASCULE
+ command: $${AUTOSYS-FIX-manager_bat}/gestion_init.sh init_fin_bascule GUE2
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-START)
+ description: "machine active : lxpr1502ps"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-B-CHECK_AGENT_PASSIF ----------------- */ 
+
+ insert_job: GUE2-D-B-CHECK_AGENT_PASSIF   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-CHECK_REPLICATION)
+ description: "Verification agent passif"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-check_agent_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-check_agent_ora1_passif   job_type: CMD 
+  box_name: GUE2-D-B-CHECK_AGENT_PASSIF
+  command: sleep 1
+  machine: gue2_pdbgue2_passif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Verification agent passif"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-check_agent_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-check_agent_wlf1_passif   job_type: CMD 
+  box_name: GUE2-D-B-CHECK_AGENT_PASSIF
+  command: sleep 1
+  machine: gue2_wlf1_passif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-check_agent_bmq1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-check_agent_bmq1_passif   job_type: CMD 
+  box_name: GUE2-D-B-CHECK_AGENT_PASSIF
+  command: sleep 1
+  machine: gue2_bmq1_passif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-check_agent_web1_passif ----------------- */ 
+
+  insert_job: GUE2-D-C-check_agent_web1_passif   job_type: CMD 
+  box_name: GUE2-D-B-CHECK_AGENT_PASSIF
+  command: sleep 1
+  machine: gue2_web1_passif_v
+  owner: autosys
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-B-DNSX ----------------- */ 
+
+ insert_job: GUE2-D-B-DNSX   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-STOP)
+ description: "DNSX GUE2"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-dnsx ----------------- */ 
+
+  insert_job: GUE2-D-C-dnsx   job_type: CMD 
+  box_name: GUE2-D-B-DNSX
+  command: /home/dns/appli/expl/proc/dnsfailover.ksh --failover --app_name $${GUE2-UPD-matur} --app_env $${GUE2-UPD-env_dnsx} --target_site $${GUE2-UPD-sens_bascule}
+  machine: dns_trt1_standalone_v
+  owner: dns
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "BASCULE DNSX"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-tempo_dnsx ----------------- */ 
+
+  insert_job: GUE2-D-C-tempo_dnsx   job_type: CMD 
+  box_name: GUE2-D-B-DNSX
+  command: sleep $${SRE-FIX-tempo_dnsx}
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-D-C-dnsx)
+  description: "DNSX TEMPORISATION"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-B-FAILOVER_ORA ----------------- */ 
+
+ insert_job: GUE2-D-B-FAILOVER_ORA   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-DNSX)
+ box_success: s(GUE2-D-B-FAILOVER_ORA_ON) | s(GUE2-D-B-FAILOVER_ORA_OFF)
+ description: "Base en mode failover en cas d'incident"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-FAILOVER_ORA_ON ----------------- */ 
+
+  insert_job: GUE2-D-B-FAILOVER_ORA_ON   job_type: BOX 
+  box_name: GUE2-D-B-FAILOVER_ORA
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-failover_state_ora1) = "ON"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-failover_ora1 ----------------- */ 
+
+   insert_job: GUE2-D-C-failover_ora1   job_type: CMD 
+   box_name: GUE2-D-B-FAILOVER_ORA_ON
+   command: $${ORACLE-FIX-shell}/dg_failover.sh
+   machine: gue2_pdbgue2_actif_v
+   owner: cdague2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-wait_online_machine_ora1)
+   description: "Passage en mode failover de la base GUE2 en cas d'incident"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-off_ice_post_bascule_incident_ora1 ----------------- */ 
+
+   insert_job: GUE2-D-C-off_ice_post_bascule_incident_ora1   job_type: CMD 
+   box_name: GUE2-D-B-FAILOVER_ORA_ON
+   command: sendevent -E JOB_OFF_ICE -J GUE2-C-B-POST_BASCULE_INCIDENT
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-failover_ora1)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-wait_online_machine_ora1 ----------------- */ 
+
+   insert_job: GUE2-D-C-wait_online_machine_ora1   job_type: CMD 
+   box_name: GUE2-D-B-FAILOVER_ORA_ON
+   command: sleep 360
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "wait 6 minutes pour retour online machine"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-FAILOVER_ORA_OFF ----------------- */ 
+
+  insert_job: GUE2-D-B-FAILOVER_ORA_OFF   job_type: BOX 
+  box_name: GUE2-D-B-FAILOVER_ORA
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-failover_state_ora1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-not_failover_ora1 ----------------- */ 
+
+   insert_job: GUE2-D-C-not_failover_ora1   job_type: CMD 
+   box_name: GUE2-D-B-FAILOVER_ORA_OFF
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-on_ice_post_bascule_incident_ora1 ----------------- */ 
+
+   insert_job: GUE2-D-C-on_ice_post_bascule_incident_ora1   job_type: CMD 
+   box_name: GUE2-D-B-FAILOVER_ORA_OFF
+   command: sendevent -E JOB_ON_ICE -J GUE2-C-B-POST_BASCULE_INCIDENT
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-not_failover_ora1)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-D-B-CHECK_REPLICATION ----------------- */ 
+
+ insert_job: GUE2-D-B-CHECK_REPLICATION   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-TEMOIN)
+ description: "Check replication"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-check_replication_ora1 ----------------- */ 
+
+  insert_job: GUE2-D-C-check_replication_ora1   job_type: CMD 
+  box_name: GUE2-D-B-CHECK_REPLICATION
+  command: $${ORACLE-FIX-shell}/dg_ready_to_switch.sh
+  machine: gue2_pdbgue2_passif_v
+  owner: cdague2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(GUE2-UPD-pdbgue2_state_database_passif) = "START"
+  description: "Verification integrite passif"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-D-B-RESYNC_STATE_ORA ----------------- */ 
+
+ insert_job: GUE2-D-B-RESYNC_STATE_ORA   job_type: BOX 
+ box_name: GUE2-D-B-BASCULE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-B-SWITCH_ORA)
+ box_success: s(GUE2-D-C-not_resync_state) | s(GUE2-D-C-resync_state)
+ description: "resynchronisation de la base apres perte de datacenter"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-C-not_resync_state ----------------- */ 
+
+  insert_job: GUE2-D-C-not_resync_state   job_type: CMD 
+  box_name: GUE2-D-B-RESYNC_STATE_ORA
+  command: exit 0
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-failover_state_ora1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-D-C-resync_state ----------------- */ 
+
+  insert_job: GUE2-D-C-resync_state   job_type: CMD 
+  box_name: GUE2-D-B-RESYNC_STATE_ORA
+  command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_resync_initial_state.sql"
+  machine: gue2_pdbgue2_actif_v
+  owner: gue2adm
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-failover_state_ora1) = "ON"
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+/* ----------------- GUE2-C-B-POST_BASCULE_INCIDENT ----------------- */ 
+
+insert_job: GUE2-C-B-POST_BASCULE_INCIDENT   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+days_of_week: all
+start_mins: 00,05,10,15,20,25,30,35,40,45,50,55
+run_window: "00:00-23:50"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE" & (v(GUE2-UPD-post_check_ora1) = "ON" | v(GUE2-UPD-post_check_wlf1) = "ON" | v(GUE2-UPD-post_check_bmq1) = "ON" | v(GUE2-UPD-post_check_web1) = "ON")
+description: "NE PAS DEICE !!! ne sert que lors du PCIT"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-C-B-POST_ORA1 ----------------- */ 
+
+ insert_job: GUE2-C-B-POST_ORA1   job_type: BOX 
+ box_name: GUE2-C-B-POST_BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-C-B-POST_CHECK_ORA1) | s(GUE2-C-B-POST_NO_CHECK_ORA1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_CHECK_ORA1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_CHECK_ORA1   job_type: BOX 
+  box_name: GUE2-C-B-POST_ORA1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_ora1) = "ON" & v(GUE2-UPD-failover_state_ora1) = "ON"
+  box_success: f(GUE2-C-C-post_check_ora1_passif) | s(GUE2-C-C-post_set_off_post_check_ora1)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_check_ora1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_check_ora1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: sleep 1
+   machine: gue2_pdbgue2_passif_v
+   owner: autosys
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Check"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_set_off_failover_state_ora1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_set_off_failover_state_ora1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: sendevent -E SET_GLOBAL -G GUE2-UPD-failover_state_ora1=OFF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_reinstate_ora1_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_ora1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_ora1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_pdbgue2_passif_v GUE2-D-C-check_replication_ora1 GUE2-D-B-SWITCH_ORA
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_ora1_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_ora1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_ora1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_pdbgue2_actif_v GUE2-D-B-BLACKOUT_SUPERVISION
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_check_ora1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_svtd_ora1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_svtd_ora1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_pdbgue2_passif_v ORACLE-H-B-GUE2_PDBGUE2_PASSIF ORACLE-Q-B-GUE2_PDBGUE2_PASSIF ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_svtd_ora1_actif) & v(ORACLE-UPD-cycle_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_passif) = "STOP"
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_svtd_ora1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_svtd_ora1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_pdbgue2_actif_v ORACLE-H-B-GUE2_PDBGUE2_ACTIF ORACLE-Q-B-GUE2_PDBGUE2_ACTIF ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_blackout_supervision_ora1_passif) & v(ORACLE-UPD-cycle_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-quoti_gue2_pdbgue2_actif) = "STOP"
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_start_ora1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_start_ora1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${ORACLE-FIX-shell}/start_base.sh
+   machine: gue2_pdbgue2_passif_v
+   owner: cdague2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_ora1_passif)
+   description: "Attention cod-ret=3 apres un failover"
+   alarm_if_fail: 1
+   max_exit_success: 3
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_sleep1_ora1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_sleep1_ora1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: sleep 120
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: d(GUE2-C-C-post_start_ora1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_reinstate_ora1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_reinstate_ora1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: $${ORACLE-FIX-shell}/dg_reinstate.sh
+   machine: gue2_pdbgue2_actif_v
+   owner: cdague2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_sleep1_ora1)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_blackout_supervision_ora1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_blackout_supervision_ora1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_pdbgue2_passif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_set_off_failover_state_ora1)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_set_off_post_check_ora1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_set_off_post_check_ora1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_ORA1
+   command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_ora1=OFF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_svtd_ora1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_NO_CHECK_ORA1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_NO_CHECK_ORA1   job_type: BOX 
+  box_name: GUE2-C-B-POST_ORA1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_ora1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-no_check_ora1 ----------------- */ 
+
+   insert_job: GUE2-C-C-no_check_ora1   job_type: CMD 
+   box_name: GUE2-C-B-POST_NO_CHECK_ORA1
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-C-B-POST_BMQ1 ----------------- */ 
+
+ insert_job: GUE2-C-B-POST_BMQ1   job_type: BOX 
+ box_name: GUE2-C-B-POST_BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-C-B-POST_CHECK_BMQ1) | s(GUE2-C-B-POST_NO_CHECK_BMQ1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_CHECK_BMQ1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_CHECK_BMQ1   job_type: BOX 
+  box_name: GUE2-C-B-POST_BMQ1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_bmq1) = "ON"
+  box_success: f(GUE2-C-C-post_check_bmq1_passif) | s(GUE2-C-C-post_set_off_post_check_bmq1)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_check_bmq1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_check_bmq1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_BMQ1
+   command: sleep 1
+   machine: gue2_bmq1_passif_v
+   owner: autosys
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Check"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_bmq1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_BMQ1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_bmq1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_BMQ
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_blackout_supervision_bmq1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_bmq1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_bmq1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_BMQ1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_bmq1_passif_v GUE2-D-B-XXX
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_bmq1_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_set_off_post_check_bmq1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_set_off_post_check_bmq1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_BMQ1
+   command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_bmq1=OFF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_bmq1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_blackout_supervision_bmq1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_blackout_supervision_bmq1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_BMQ1
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_bmq1_passif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_check_bmq1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_NO_CHECK_BMQ1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_NO_CHECK_BMQ1   job_type: BOX 
+  box_name: GUE2-C-B-POST_BMQ1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_bmq1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-no_check_bmq1 ----------------- */ 
+
+   insert_job: GUE2-C-C-no_check_bmq1   job_type: CMD 
+   box_name: GUE2-C-B-POST_NO_CHECK_BMQ1
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-C-B-POST_WLF1 ----------------- */ 
+
+ insert_job: GUE2-C-B-POST_WLF1   job_type: BOX 
+ box_name: GUE2-C-B-POST_BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-C-B-POST_CHECK_WLF1) | s(GUE2-C-B-POST_NO_CHECK_WLF1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_CHECK_WLF1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_CHECK_WLF1   job_type: BOX 
+  box_name: GUE2-C-B-POST_WLF1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_wlf1) = "ON"
+  box_success: f(GUE2-C-C-post_check_wlf1_passif) | s(GUE2-C-C-post_set_off_post_check_wlf1)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_check_wlf1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_check_wlf1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WLF1
+   command: sleep 1
+   machine: gue2_wlf1_passif_v
+   owner: autosys
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "check"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_wlf1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WLF1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_wlf1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_WLF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_blackout_supervision_wlf1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_wlf1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_wlf1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WLF1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_wlf1_passif_v GUE2-D-B-XXX
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_wlf1_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_set_off_post_check_wlf1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_set_off_post_check_wlf1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WLF1
+   command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_wlf1=OFF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_wlf1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_blackout_supervision_wlf1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_blackout_supervision_wlf1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WLF1
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_wlf1_passif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_check_wlf1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_NO_CHECK_WLF1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_NO_CHECK_WLF1   job_type: BOX 
+  box_name: GUE2-C-B-POST_WLF1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_wlf1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-no_check_wlf1 ----------------- */ 
+
+   insert_job: GUE2-C-C-no_check_wlf1   job_type: CMD 
+   box_name: GUE2-C-B-POST_NO_CHECK_WLF1
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-C-B-POST_WEB1 ----------------- */ 
+
+ insert_job: GUE2-C-B-POST_WEB1   job_type: BOX 
+ box_name: GUE2-C-B-POST_BASCULE_INCIDENT
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ box_success: s(GUE2-C-B-POST_CHECK_WEB1) | s(GUE2-C-B-POST_NO_CHECK_WEB1)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_CHECK_WEB1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_CHECK_WEB1   job_type: BOX 
+  box_name: GUE2-C-B-POST_WEB1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_web1) = "ON"
+  box_success: f(GUE2-C-C-post_check_web1_passif) | s(GUE2-C-C-post_set_off_post_check_web1)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_check_web1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_check_web1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WEB1
+   command: sleep 1
+   machine: gue2_web1_passif_v
+   owner: autosys
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Check"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_web1_actif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_web1_actif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WEB1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_web1_actif_v GUE2-D-B-BLACKOUT_SUPERVISION GUE2-D-B-STOP_WEB
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_blackout_supervision_web1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_off_noexec_web1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_off_noexec_web1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WEB1
+   command: $${AUTOSYS-FIX-manager_bat}/post_bascule_incident.ksh gue2_web1_passif_v GUE2-D-B-XXX
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_web1_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_set_off_post_check_web1 ----------------- */ 
+
+   insert_job: GUE2-C-C-post_set_off_post_check_web1   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WEB1
+   command: sendevent -E SET_GLOBAL -G GUE2-UPD-post_check_web1=OFF
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_off_noexec_web1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-C-C-post_blackout_supervision_web1_passif ----------------- */ 
+
+   insert_job: GUE2-C-C-post_blackout_supervision_web1_passif   job_type: CMD 
+   box_name: GUE2-C-B-POST_CHECK_WEB1
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_web1_passif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-C-C-post_check_web1_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-C-B-POST_NO_CHECK_WEB1 ----------------- */ 
+
+  insert_job: GUE2-C-B-POST_NO_CHECK_WEB1   job_type: BOX 
+  box_name: GUE2-C-B-POST_WEB1
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-post_check_web1) = "OFF"
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-C-C-no_check_web1 ----------------- */ 
+
+   insert_job: GUE2-C-C-no_check_web1   job_type: CMD 
+   box_name: GUE2-C-B-POST_NO_CHECK_WEB1
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+/* ----------------- GUE2-E-B-WHEREAMI_EVENT ----------------- */ 
+
+insert_job: GUE2-E-B-WHEREAMI_EVENT   job_type: BOX 
+owner: auto113
+permission: 
+date_conditions: 0
+condition: d(GUE2-D-B-BASCULE)
+description: "Insertion nouvelle bascule sur evenement"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX.SUPTEC_SRE
+application: GUE2
+
+
+ /* ----------------- GUE2-E-C-whereami_event ----------------- */ 
+
+ insert_job: GUE2-E-C-whereami_event   job_type: CMD 
+ box_name: GUE2-E-B-WHEREAMI_EVENT
+ command: /home/auto113/ADMINLOG/EXPLOIT/scripts/WHEREAMI/BASCULE_APPLI.sh GUE2 $${WHEREAMI-FIX-mft_profile}
+ machine: autosys_manager1_primary_standalone_v
+ owner: auto113
+ permission: 
+ date_conditions: 0
+ description: "Insertion nouvelle bascule sur evenement"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX.SUPTEC_SRE
+ application: GUE2
+
+
+/* ----------------- GUE2-Q-B ----------------- */ 
+
+insert_job: GUE2-Q-B   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+days_of_week: mo,tu,we,th,fr
+start_times: "22:30"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE"
+description: "A DEFINIR"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-Q-C-init ----------------- */ 
+
+ insert_job: GUE2-Q-C-init   job_type: CMD 
+ box_name: GUE2-Q-B
+ command: $${AUTOSYS-FIX-manager_bat}/gestion_init.sh init_quoti GUE2
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-Q-B-TEMOIN)
+ description: "A DEFINIR"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-STOP ----------------- */ 
+
+ insert_job: GUE2-Q-B-STOP   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-Q-C-init)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-STOP_WLF ----------------- */ 
+
+  insert_job: GUE2-Q-B-STOP_WLF   job_type: BOX 
+  box_name: GUE2-Q-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-STOP_BMQ)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-stop_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-stop_wlf1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-STOP_WLF
+   command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret toutes instances Wildfly"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-BLACKOUT_SUPERVISION ----------------- */ 
+
+  insert_job: GUE2-Q-B-BLACKOUT_SUPERVISION   job_type: BOX 
+  box_name: GUE2-Q-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-C-set_stop_upd_appli_state)
+  description: "arret supervision"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-blackout_supervision_delay ----------------- */ 
+
+   insert_job: GUE2-Q-C-blackout_supervision_delay   job_type: CMD 
+   box_name: GUE2-Q-B-BLACKOUT_SUPERVISION
+   command: sleep $${SRE-FIX-tempo_supervision}
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "tempo pour prise en compte des flags de blackout supervision"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-blackout_supervision_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-blackout_supervision_wlf1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-blackout_supervision_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-blackout_supervision_bmq1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_bmq1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-blackout_supervision_web1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-blackout_supervision_web1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-BLACKOUT_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+   machine: gue2_web1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-set_stop_upd_appli_state ----------------- */ 
+
+  insert_job: GUE2-Q-C-set_stop_upd_appli_state   job_type: CMD 
+  box_name: GUE2-Q-B-STOP
+  command: sendevent -E SET_GLOBAL -G "GUE2-UPD-appli_state=STOP"
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "indique application stopp??e"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-STOP_BMQ ----------------- */ 
+
+  insert_job: GUE2-Q-B-STOP_BMQ   job_type: BOX 
+  box_name: GUE2-Q-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-STOP_WEB)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-stop_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-stop_bmq1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-STOP_BMQ
+   command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+   machine: gue2_bmq1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "Arret du bridgeMQ"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-STOP_WEB ----------------- */ 
+
+  insert_job: GUE2-Q-B-STOP_WEB   job_type: BOX 
+  box_name: GUE2-Q-B-STOP
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-BLACKOUT_SUPERVISION)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-stop_web1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-stop_web1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-STOP_WEB
+   command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+   machine: gue2_web1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "stop scan webverif"
+   max_run_alarm: 10
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-SVG_INCR ----------------- */ 
+
+ insert_job: GUE2-Q-B-SVG_INCR   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-Q-B-STOP)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_wlf1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_wlf1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_ora1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat_ora}/svg_incr_fs_appli
+  machine: gue2_pdbgue2_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_wlf1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_wlf1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_ora1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat_ora}/svg_incr_fs_appli
+  machine: gue2_pdbgue2_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_bmq1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_bmq1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_bmq1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-svg_incr_fs_wlf1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_bmq1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_bmq1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_bmq1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-svg_incr_fs_wlf1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_web1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_web1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_web1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-svg_incr_fs_bmq1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-svg_incr_fs_web1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-svg_incr_fs_web1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-SVG_INCR
+  command: $${GUE2-FIX-bat}/svg_incr_fs_appli
+  machine: gue2_web1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-svg_incr_fs_bmq1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-PURGE ----------------- */ 
+
+ insert_job: GUE2-Q-B-PURGE   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(GUE2-Q-B-SVG_INCR)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_wlf1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_wlf1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_ora1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat_ora}/purge_appli
+  machine: gue2_pdbgue2_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_ora1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat_ora}/purge_appli
+  machine: gue2_pdbgue2_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_wlf1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_wlf1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_bmq1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_bmq1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_bmq1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-purge_wlf1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_bmq1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_bmq1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_bmq1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-purge_wlf1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_web1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_web1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_web1_actif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-purge_bmq1_actif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-purge_web1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-purge_web1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-PURGE
+  command: $${GUE2-FIX-bat}/purge_appli
+  machine: gue2_web1_passif_v
+  owner: root
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: d(GUE2-Q-C-purge_bmq1_passif)
+  description: "A DEFINIR"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-TEMOIN ----------------- */ 
+
+ insert_job: GUE2-Q-B-TEMOIN   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-Q-C-set_run_upd_servitudes_state)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-primaire ----------------- */ 
+
+  insert_job: GUE2-Q-C-primaire   job_type: CMD 
+  box_name: GUE2-Q-B-TEMOIN
+  command: exit 0
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "SUCCESS si l'application est active sur CMB"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-secours ----------------- */ 
+
+  insert_job: GUE2-Q-C-secours   job_type: CMD 
+  box_name: GUE2-Q-B-TEMOIN
+  command: exit 0
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "SUCCESS si l'application est active sur CIMV"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+ /* ----------------- GUE2-Q-C-set_run_upd_servitudes_state ----------------- */ 
+
+ insert_job: GUE2-Q-C-set_run_upd_servitudes_state   job_type: CMD 
+ box_name: GUE2-Q-B
+ command: sendevent -E SET_GLOBAL -G "GUE2-UPD-servitudes_state=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "indique servitudes en cours"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-Q-C-set_stop_upd_servitudes_state ----------------- */ 
+
+ insert_job: GUE2-Q-C-set_stop_upd_servitudes_state   job_type: CMD 
+ box_name: GUE2-Q-B
+ command: sendevent -E SET_GLOBAL -G "GUE2-UPD-servitudes_state=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(GUE2-Q-B-BATCH_ORA)
+ description: "indique servitudes terminees"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-PATCHING_SRV_UNIX ----------------- */ 
+
+ insert_job: GUE2-Q-B-PATCHING_SRV_UNIX   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: 
+ date_conditions: 0
+ condition: s(GUE2-Q-C-set_stop_upd_servitudes_state)
+ box_success: d(GUE2-Q-B-PATCHING_SRV_UNIX_STOP) | d(GUE2-Q-B-PATCHING_SRV_UNIX_GO)
+ description: "Patching Mensuel"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-PATCHING_SRV_UNIX_STOP ----------------- */ 
+
+  insert_job: GUE2-Q-B-PATCHING_SRV_UNIX_STOP   job_type: BOX 
+  box_name: GUE2-Q-B-PATCHING_SRV_UNIX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-patching_state_srv) = "STOP"
+  description: "Patching non autorise"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-patching_srv_unix_stop ----------------- */ 
+
+   insert_job: GUE2-Q-C-patching_srv_unix_stop   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_STOP
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: gx
+   date_conditions: 0
+   description: "Pas de patching"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-check_agent_up_day_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-check_agent_up_day_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_STOP
+   command: "$${AUTOSYS-FIX-manager_bat}/check_agent_up_day.sh $${GUE2-FIX-patching_srv} 2 10"
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: me,ge,gx,we
+   date_conditions: 0
+   description: "Check serveurs"
+   n_retrys: 2
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX.SUPTEC_SRE
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-PATCHING_SRV_UNIX_GO ----------------- */ 
+
+  insert_job: GUE2-Q-B-PATCHING_SRV_UNIX_GO   job_type: BOX 
+  box_name: GUE2-Q-B-PATCHING_SRV_UNIX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: v(GUE2-UPD-patching_state_srv) = "GO"
+  description: "Patching autorise"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-set_run_upd_patching_state_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-set_run_upd_patching_state_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_GO
+   command: sendevent -E SET_GLOBAL -G "GUE2-UPD-patching_state_srv=RUN"
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: gx
+   date_conditions: 0
+   description: "Patching en cours"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-reboot_patching_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-reboot_patching_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_GO
+   command: /opt/vpmux/scripts/run_vpmux_cmd.ksh /opt/vpmux/scripts/cpg_install.py -e $${GUE2-FIX-patching_env} -i CPG-`date +%Y%m` -s $${GUE2-FIX-patching_srv} --log_level DEBUG
+   machine: vpmux_trt1_standalone_v
+   owner: vpmux
+   permission: gx
+   date_conditions: 0
+   condition: s(GUE2-Q-C-set_run_upd_patching_state_srv)
+   description: "Patching VPMUX et REBOOT"
+   n_retrys: 2
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX.SUPTEC_SYS_UNIX
+   application: GUE2
+   resources: (VPMUX-Q-REBOOT_PATCHING_UNIX_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+   /* ----------------- GUE2-Q-C-check_agent_patching_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-check_agent_patching_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_GO
+   command: "$${AUTOSYS-FIX-manager_bat}/check_agent_up_patching.sh $${GUE2-FIX-patching_srv} 5 1000"
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: me,ge,gx,we
+   date_conditions: 0
+   condition: d(GUE2-Q-C-reboot_patching_srv)
+   description: "Attente du redemarrage complet des serveurs"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-check_patching_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-check_patching_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_GO
+   command: /opt/vpmux/scripts/run_vpmux_cmd.ksh /opt/vpmux/scripts/cpg_verify.py -e $${GUE2-FIX-patching_env} -i CPG-`date +%Y%m` -s $${GUE2-FIX-patching_srv} --log_level DEBUG
+   machine: vpmux_trt1_standalone_v
+   owner: vpmux
+   permission: gx
+   date_conditions: 0
+   condition: s(GUE2-Q-C-check_agent_patching_srv)
+   description: "Check patching VPMUX"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX.SUPTEC_SYS_UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-set_stop_upd_patching_state_srv ----------------- */ 
+
+   insert_job: GUE2-Q-C-set_stop_upd_patching_state_srv   job_type: CMD 
+   box_name: GUE2-Q-B-PATCHING_SRV_UNIX_GO
+   command: sendevent -E SET_GLOBAL -G "GUE2-UPD-patching_state_srv=STOP"
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: gx
+   date_conditions: 0
+   condition: d(GUE2-Q-C-check_patching_srv)
+   description: "Patching termine"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-START ----------------- */ 
+
+ insert_job: GUE2-Q-B-START   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 1
+ days_of_week: mo,tu,we,th,fr
+ exclude_calendar: FERIE_MF
+ start_times: "00:30"
+ run_window: "00:30-06:45"
+ condition: d(GUE2-Q-B-PATCHING_SRV_UNIX) & v(GUE2-UPD-patching_state_srv) = "STOP"
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-START_WLF ----------------- */ 
+
+  insert_job: GUE2-Q-B-START_WLF   job_type: BOX 
+  box_name: GUE2-Q-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-start_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-start_wlf1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-START_WLF
+   command: $${GUE2-FIX-bat}/wildfly.sh start all
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-ACTIVATION_SUPERVISION ----------------- */ 
+
+  insert_job: GUE2-Q-B-ACTIVATION_SUPERVISION   job_type: BOX 
+  box_name: GUE2-Q-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-C-set_run_upd_appli_state)
+  description: "demarrage supervision"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-activation_supervision_wlf1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-activation_supervision_wlf1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-ACTIVATION_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-activation_supervision_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-activation_supervision_bmq1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-ACTIVATION_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+   machine: gue2_bmq1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-activation_supervision_web1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-activation_supervision_web1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-ACTIVATION_SUPERVISION
+   command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+   machine: gue2_web1_actif_v
+   owner: gue2
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "A DEFINIR"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-set_run_upd_appli_state ----------------- */ 
+
+  insert_job: GUE2-Q-C-set_run_upd_appli_state   job_type: CMD 
+  box_name: GUE2-Q-B-START
+  command: sendevent -E SET_GLOBAL -G "GUE2-UPD-appli_state=RUN"
+  machine: roundrobin_as_manager
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-START_WEB)
+  description: "indique application demarree"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  group: UNIX
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-START_BMQ ----------------- */ 
+
+  insert_job: GUE2-Q-B-START_BMQ   job_type: BOX 
+  box_name: GUE2-Q-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-START_WLF)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-start_bmq1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-start_bmq1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-START_BMQ
+   command: $${GUE2-FIX-bat}/BridgeMQ.sh -start
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "demarrage BridgeMQ"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-START_WEB ----------------- */ 
+
+  insert_job: GUE2-Q-B-START_WEB   job_type: BOX 
+  box_name: GUE2-Q-B-START
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  condition: s(GUE2-Q-B-START_BMQ)
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-start_web1_actif ----------------- */ 
+
+   insert_job: GUE2-Q-C-start_web1_actif   job_type: CMD 
+   box_name: GUE2-Q-B-START_WEB
+   command: $${GUE2-FIX-bat}/scan_webverif.sh -start
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "demarrage scan webverif"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-BATCH_ORA ----------------- */ 
+
+ insert_job: GUE2-Q-B-BATCH_ORA   job_type: BOX 
+ box_name: GUE2-Q-B
+ owner: auto113
+ permission: gx
+ date_conditions: 0
+ condition: d(GUE2-Q-B-PURGE)
+ description: "batch nuit"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-PURGE_BASE ----------------- */ 
+
+  insert_job: GUE2-Q-B-PURGE_BASE   job_type: BOX 
+  box_name: GUE2-Q-B-BATCH_ORA
+  owner: auto113
+  permission: gx
+  date_conditions: 0
+  description: "purges quoti et hebdo"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-purge_base ----------------- */ 
+
+   insert_job: GUE2-Q-C-purge_base   job_type: CMD 
+   box_name: GUE2-Q-B-PURGE_BASE
+   command: $${GUE2-FIX-bat_ora}/purge.sh
+   machine: gue2_pdbgue2_actif_v
+   owner: gue2adm
+   permission: gx
+   date_conditions: 0
+   description: "purge base"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-Q-B-MAJ_AGENTS ----------------- */ 
+
+  insert_job: GUE2-Q-B-MAJ_AGENTS   job_type: BOX 
+  box_name: GUE2-Q-B-BATCH_ORA
+  owner: auto113
+  permission: gx
+  date_conditions: 0
+  condition: d(GUE2-Q-B-PURGE_BASE)
+  description: "maj agents"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-Q-C-maj_agents ----------------- */ 
+
+   insert_job: GUE2-Q-C-maj_agents   job_type: CMD 
+   box_name: GUE2-Q-B-MAJ_AGENTS
+   command: $${GUE2-FIX-bat_ora}/maj_agents.sh
+   machine: gue2_pdbgue2_actif_v
+   owner: gue2adm
+   permission: gx
+   date_conditions: 0
+   description: "maj agents"
+   max_run_alarm: 10
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+/* ----------------- GUE2-D-B-PROC_A_LA_DEMANDE ----------------- */ 
+
+insert_job: GUE2-D-B-PROC_A_LA_DEMANDE   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 0
+description: "A DEFINIR"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-D-B-STOP_COMPLET ----------------- */ 
+
+ insert_job: GUE2-D-B-STOP_COMPLET   job_type: BOX 
+ box_name: GUE2-D-B-PROC_A_LA_DEMANDE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-C-failsafe)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_COMPLET_PASSIF ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_COMPLET_PASSIF   job_type: BOX 
+  box_name: GUE2-D-B-STOP_COMPLET
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-delay_complet_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-delay_complet_passif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   command: sleep 60
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-check_servitudes_complet_passif)
+   description: "en attente du possible start appli"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-delay_complet_passif)
+   description: "arret supervision"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_ora1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_ora1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_pdbgue2_passif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_wlf1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_wlf1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_wlf1_passif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_delay_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_delay_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF
+    command: sleep $${SRE-FIX-tempo_supervision}
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "Tempo pour que supervision prenne en compte les flags de blackout"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_bmq1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_bmq1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_bmq1_passif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_web1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_web1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_web1_passif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WLF_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WLF_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_BMQ_COMPLET_PASSIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_wlf1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_wlf1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WLF_COMPLET_PASSIF
+    command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+    machine: gue2_wlf1_passif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret toutes instances Wildfly"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_ORA_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_ORA_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_WLF_COMPLET_PASSIF)
+   description: "STOP ORA"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_ora1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_ora1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_ORA_COMPLET_PASSIF
+    command: $${ORACLE-FIX-shell}/stop_base.sh
+    machine: gue2_pdbgue2_passif_v
+    owner: cdague2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-C-set_stop_state_database_ora1_complet_passif)
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-set_stop_state_database_ora1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-set_stop_state_database_ora1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_ORA_COMPLET_PASSIF
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-pdbgue2_state_database_passif=STOP"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "indique database_ora1 passif stopp??e"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_BMQ_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_BMQ_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_WEB_COMPLET_PASSIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_bmq1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_bmq1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_BMQ_COMPLET_PASSIF
+    command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+    machine: gue2_bmq1_passif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret du bridgeMQ"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-C-check_servitudes_complet_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-check_servitudes_complet_passif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-servitudes_state) = "STOP"
+   description: "en attente de la fin des servitudes"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WEB_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WEB_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_PASSIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_web1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_web1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WEB_COMPLET_PASSIF
+    command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+    machine: gue2_web1_passif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "stop scan webverif"
+    max_run_alarm: 10
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_COMPLET_ACTIF ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_COMPLET_ACTIF   job_type: BOX 
+  box_name: GUE2-D-B-STOP_COMPLET
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-delay_complet_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-delay_complet_actif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   command: sleep 60
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-check_servitudes_complet_actif)
+   description: "en attente du possible start appli"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-delay_complet_actif)
+   description: "arret supervision"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_wlf1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_wlf1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_delay_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_delay_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF
+    command: sleep $${SRE-FIX-tempo_supervision}
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "Tempo pour que supervision prenne en compte les flags de blackout"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_bmq1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_bmq1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_bmq1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_web1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_web1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_web1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WLF_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WLF_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_BMQ_COMPLET_ACTIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_wlf1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_wlf1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WLF_COMPLET_ACTIF
+    command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret toutes instances Wildfly"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_ORA_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_ORA_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_WLF_COMPLET_ACTIF)
+   description: "STOP ORA"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_ORA_COMPLET_ACTIF
+    command: $${ORACLE-FIX-shell}/stop_base.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: cdague2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-C-set_stop_state_database_ora1_complet_actif)
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-set_stop_state_database_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-set_stop_state_database_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_ORA_COMPLET_ACTIF
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-pdbgue2_state_database_actif=STOP"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "indique database_ora1 actif stopp??e"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_BMQ_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_BMQ_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_WEB_COMPLET_ACTIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_bmq1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_bmq1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_BMQ_COMPLET_ACTIF
+    command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+    machine: gue2_bmq1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret du bridgeMQ"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-C-check_servitudes_complet_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-check_servitudes_complet_actif   job_type: CMD 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-servitudes_state) = "STOP"
+   description: "en attente de la fin des servitudes"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WEB_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WEB_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-BLACKOUT_SUPERVISION_COMPLET_ACTIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_web1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_web1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WEB_COMPLET_ACTIF
+    command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+    machine: gue2_web1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "stop scan webverif"
+    max_run_alarm: 10
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+ /* ----------------- GUE2-D-B-START_COMPLET ----------------- */ 
+
+ insert_job: GUE2-D-B-START_COMPLET   job_type: BOX 
+ box_name: GUE2-D-B-PROC_A_LA_DEMANDE
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: s(GUE2-D-C-failsafe)
+ description: "A DEFINIR"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ group: UNIX
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-START_COMPLET_PASSIF ----------------- */ 
+
+  insert_job: GUE2-D-B-START_COMPLET_PASSIF   job_type: BOX 
+  box_name: GUE2-D-B-START_COMPLET
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_ORA_COMPLET_PASSIF ----------------- */ 
+
+   insert_job: GUE2-D-B-START_ORA_COMPLET_PASSIF   job_type: BOX 
+   box_name: GUE2-D-B-START_COMPLET_PASSIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-delay2_complet_passif)
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-start_ora1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-start_ora1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-START_ORA_COMPLET_PASSIF
+    command: $${ORACLE-FIX-shell}/start_base.sh
+    machine: gue2_pdbgue2_passif_v
+    owner: cdague2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-set_start_state_database_ora1_complet_passif ----------------- */ 
+
+    insert_job: GUE2-D-C-set_start_state_database_ora1_complet_passif   job_type: CMD 
+    box_name: GUE2-D-B-START_ORA_COMPLET_PASSIF
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-pdbgue2_state_database_passif=START"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-C-start_ora1_complet_passif)
+    description: "indique database_ora1_passif demarree"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-C-check2_servitudes_complet_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-check2_servitudes_complet_passif   job_type: CMD 
+   box_name: GUE2-D-B-START_COMPLET_PASSIF
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-servitudes_state) = "STOP"
+   description: "en attente de la fin des servitudes"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-delay2_complet_passif ----------------- */ 
+
+   insert_job: GUE2-D-C-delay2_complet_passif   job_type: CMD 
+   box_name: GUE2-D-B-START_COMPLET_PASSIF
+   command: sleep 60
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-check2_servitudes_complet_passif)
+   description: "en attente du possible start appli"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-START_COMPLET_ACTIF ----------------- */ 
+
+  insert_job: GUE2-D-B-START_COMPLET_ACTIF   job_type: BOX 
+  box_name: GUE2-D-B-START_COMPLET
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "A DEFINIR"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_ORA_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-START_ORA_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-delay2_complet_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-start_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-start_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-START_ORA_COMPLET_ACTIF
+    command: $${ORACLE-FIX-shell}/start_base.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: cdague2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-set_start_state_database_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-set_start_state_database_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-START_ORA_COMPLET_ACTIF
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-pdbgue2_state_database_actif=START"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-C-start_ora1_complet_actif)
+    description: "indique database_ora1 actif demarree"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-CHECK_START_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-CHECK_START_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-START_ORA_COMPLET_ACTIF)
+   box_success: d(GUE2-D-B-START_RUN_COMPLET_ACTIF) | s(GUE2-D-C-not_start_complet_actif)
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-B-START_RUN_COMPLET_ACTIF ----------------- */ 
+
+    insert_job: GUE2-D-B-START_RUN_COMPLET_ACTIF   job_type: BOX 
+    box_name: GUE2-D-B-CHECK_START_COMPLET_ACTIF
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: v(GUE2-UPD-appli_state) = "RUN"
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-B-START_WLF_COMPLET_ACTIF ----------------- */ 
+
+     insert_job: GUE2-D-B-START_WLF_COMPLET_ACTIF   job_type: BOX 
+     box_name: GUE2-D-B-START_RUN_COMPLET_ACTIF
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     description: "A DEFINIR"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     group: UNIX
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-start_wlf1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-start_wlf1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-START_WLF_COMPLET_ACTIF
+      command: $${GUE2-FIX-bat}/wildfly.sh start all
+      machine: gue2_wlf1_actif_v
+      owner: gue2
+      permission: ge,gx,we,wx
+      date_conditions: 0
+      description: "A DEFINIR"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+     /* ----------------- GUE2-D-B-START_BMQ_COMPLET_ACTIF ----------------- */ 
+
+     insert_job: GUE2-D-B-START_BMQ_COMPLET_ACTIF   job_type: BOX 
+     box_name: GUE2-D-B-START_RUN_COMPLET_ACTIF
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: s(GUE2-D-B-START_WLF_COMPLET_ACTIF)
+     description: "A DEFINIR"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     group: UNIX
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-start_bmq1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-start_bmq1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-START_BMQ_COMPLET_ACTIF
+      command: $${GUE2-FIX-bat}/BridgeMQ.sh -start
+      machine: gue2_wlf1_actif_v
+      owner: gue2
+      permission: gx
+      date_conditions: 0
+      description: "demarrage BridgeMQ"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+     /* ----------------- GUE2-D-B-START_WEB_COMPLET_ACTIF ----------------- */ 
+
+     insert_job: GUE2-D-B-START_WEB_COMPLET_ACTIF   job_type: BOX 
+     box_name: GUE2-D-B-START_RUN_COMPLET_ACTIF
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: s(GUE2-D-B-START_BMQ_COMPLET_ACTIF)
+     description: "A DEFINIR"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     group: UNIX
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-start_web1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-start_web1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-START_WEB_COMPLET_ACTIF
+      command: $${GUE2-FIX-bat}/scan_webverif.sh -start
+      machine: gue2_wlf1_actif_v
+      owner: gue2
+      permission: gx
+      date_conditions: 0
+      description: "demarrage scan webverif"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+    /* ----------------- GUE2-D-C-not_start_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-not_start_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-CHECK_START_COMPLET_ACTIF
+    command: exit 0
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: v(GUE2-UPD-appli_state) = "STOP"
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-C-check2_servitudes_complet_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-check2_servitudes_complet_actif   job_type: CMD 
+   box_name: GUE2-D-B-START_COMPLET_ACTIF
+   command: exit 0
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: v(GUE2-UPD-servitudes_state) = "STOP"
+   description: "en attente de la fin des servitudes"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-delay2_complet_actif ----------------- */ 
+
+   insert_job: GUE2-D-C-delay2_complet_actif   job_type: CMD 
+   box_name: GUE2-D-B-START_COMPLET_ACTIF
+   command: sleep 60
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-check2_servitudes_complet_actif)
+   description: "en attente du possible start appli"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-ACTIVATION_SUPERVISION_COMPLET_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-ACTIVATION_SUPERVISION_COMPLET_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_COMPLET_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-CHECK_START_COMPLET_ACTIF)
+   description: "demarrage supervision"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-activation_supervision_ora1_complet_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-activation_supervision_ora1_complet_actif   job_type: CMD 
+    box_name: GUE2-D-B-ACTIVATION_SUPERVISION_COMPLET_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-B-CHECK_SPVS_COMPLET_ACTIF ----------------- */ 
+
+    insert_job: GUE2-D-B-CHECK_SPVS_COMPLET_ACTIF   job_type: BOX 
+    box_name: GUE2-D-B-ACTIVATION_SUPERVISION_COMPLET_ACTIF
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    box_success: d(GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF) | s(GUE2-D-C-not_spvs_complet_actif)
+    description: "A DEFINIR"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    group: UNIX
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF ----------------- */ 
+
+     insert_job: GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF   job_type: BOX 
+     box_name: GUE2-D-B-CHECK_SPVS_COMPLET_ACTIF
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: v(GUE2-UPD-appli_state) = "RUN"
+     description: "A DEFINIR"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     group: UNIX
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-activation_supervision_wlf1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-activation_supervision_wlf1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF
+      command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+      machine: gue2_wlf1_actif_v
+      owner: gue2
+      permission: ge,gx,we,wx
+      date_conditions: 0
+      description: "A DEFINIR"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+      /* ----------------- GUE2-D-C-activation_supervision_bmq1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-activation_supervision_bmq1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF
+      command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+      machine: gue2_bmq1_actif_v
+      owner: gue2
+      permission: ge,gx,we,wx
+      date_conditions: 0
+      description: "A DEFINIR"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+      /* ----------------- GUE2-D-C-activation_supervision_web1_complet_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-activation_supervision_web1_complet_actif   job_type: CMD 
+      box_name: GUE2-D-B-SPVS_ACTIVE_COMPLET_ACTIF
+      command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+      machine: gue2_web1_actif_v
+      owner: gue2
+      permission: ge,gx,we,wx
+      date_conditions: 0
+      description: "A DEFINIR"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      group: UNIX
+      application: GUE2
+
+
+     /* ----------------- GUE2-D-C-not_spvs_complet_actif ----------------- */ 
+
+     insert_job: GUE2-D-C-not_spvs_complet_actif   job_type: CMD 
+     box_name: GUE2-D-B-CHECK_SPVS_COMPLET_ACTIF
+     command: exit 0
+     machine: roundrobin_as_manager
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: v(GUE2-UPD-appli_state) = "STOP"
+     description: "A DEFINIR"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     group: UNIX
+     application: GUE2
+
+
+ /* ----------------- GUE2-D-C-failsafe ----------------- */ 
+
+ insert_job: GUE2-D-C-failsafe   job_type: CMD 
+ box_name: GUE2-D-B-PROC_A_LA_DEMANDE
+ command: exit 1
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Empeche le lancement complet de la boite a la demande par erreur"
+ box_terminator: 1
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- GUE2-D-B-TOOLBOX ----------------- */ 
+
+ insert_job: GUE2-D-B-TOOLBOX   job_type: BOX 
+ box_name: GUE2-D-B-PROC_A_LA_DEMANDE
+ owner: auto113
+ permission: gx,wx
+ date_conditions: 0
+ condition: s(GUE2-D-C-failsafe)
+ description: "toolbox pour la plateforme gue2"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ application: GUE2
+
+
+  /* ----------------- GUE2-D-B-BDD_TOOLBOX ----------------- */ 
+
+  insert_job: GUE2-D-B-BDD_TOOLBOX   job_type: BOX 
+  box_name: GUE2-D-B-TOOLBOX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "toolbox bdd pour la plateforme gue2"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-BDD_UPDATE_PASSWORD ----------------- */ 
+
+   insert_job: GUE2-D-B-BDD_UPDATE_PASSWORD   job_type: BOX 
+   box_name: GUE2-D-B-BDD_TOOLBOX
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "mise a jour mot de passe de la base GUE2"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-B-BDD_CLEAR_PASSWORD ----------------- */ 
+
+    insert_job: GUE2-D-B-BDD_CLEAR_PASSWORD   job_type: BOX 
+    box_name: GUE2-D-B-BDD_UPDATE_PASSWORD
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-B-UPDATE_PASSWORD)
+    description: "suppression du mdp"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-clear_password ----------------- */ 
+
+     insert_job: GUE2-D-C-clear_password   job_type: CMD 
+     box_name: GUE2-D-B-BDD_CLEAR_PASSWORD
+     command: sendevent -E SET_GLOBAL -G GUE2-UPD-database_password=DELETE
+     machine: roundrobin_as_manager
+     owner: auto113
+     permission: gx,wx
+     date_conditions: 0
+     description: "unset de la variable password"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-C-delete_password_distributer ----------------- */ 
+
+     insert_job: GUE2-D-C-delete_password_distributer   job_type: CMD 
+     box_name: GUE2-D-B-BDD_CLEAR_PASSWORD
+     command: $${GUE2-FIX-bat_ora}/bdd_password_manager.sh delete GUE2
+     machine: gue2_pdbgue2_actif_v
+     owner: gue2adm
+     permission: gx,wx
+     date_conditions: 0
+     description: "suppression du password distributer"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     application: GUE2
+
+
+    /* ----------------- GUE2-D-B-GENERATE_PASSWORD ----------------- */ 
+
+    insert_job: GUE2-D-B-GENERATE_PASSWORD   job_type: BOX 
+    box_name: GUE2-D-B-BDD_UPDATE_PASSWORD
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "generation et distribution de mot de passe"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-generate_password ----------------- */ 
+
+     insert_job: GUE2-D-C-generate_password   job_type: CMD 
+     box_name: GUE2-D-B-GENERATE_PASSWORD
+     command: $${GUE2-FIX-bat_ora}/bdd_password_manager.sh generate GUE2
+     machine: gue2_pdbgue2_actif_v
+     owner: gue2adm
+     permission: gx,wx
+     date_conditions: 0
+     description: "mise a jour du mot de passe"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-B-EXTRACT_PASSWORD ----------------- */ 
+
+     insert_job: GUE2-D-B-EXTRACT_PASSWORD   job_type: BOX 
+     box_name: GUE2-D-B-GENERATE_PASSWORD
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: s(GUE2-D-C-generate_password)
+     description: "recuperation du mdp dans autosys"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-password_import ----------------- */ 
+
+      insert_job: GUE2-D-C-password_import   job_type: CMD 
+      box_name: GUE2-D-B-EXTRACT_PASSWORD
+      command: /bin/sh
+      machine: autosys_manager1_primary_standalone_v
+      owner: auto113
+      permission: 
+      date_conditions: 0
+      condition: s(GUE2-D-C-password_load)
+      description: "import du pwd setter dans autosys"
+      std_in_file: "$$blobt.GUE2-D-C-password_load"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      application: GUE2
+
+
+      /* ----------------- GUE2-D-C-password_load ----------------- */ 
+
+      insert_job: GUE2-D-C-password_load   job_type: CMD 
+      box_name: GUE2-D-B-EXTRACT_PASSWORD
+      command: cat /tmp/autosys_password_setter
+      machine: gue2_pdbgue2_actif_v
+      owner: gue2adm
+      permission: 
+      date_conditions: 0
+      description: "initialisation du mdp"
+      std_out_file: "$$blobt"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      application: GUE2
+
+
+    /* ----------------- GUE2-D-B-UPDATE_PASSWORD ----------------- */ 
+
+    insert_job: GUE2-D-B-UPDATE_PASSWORD   job_type: BOX 
+    box_name: GUE2-D-B-BDD_UPDATE_PASSWORD
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    condition: s(GUE2-D-B-GENERATE_PASSWORD)
+    description: "mise a jour du mot de passe"
+    alarm_if_fail: 0
+    alarm_if_terminated: 0
+    application: GUE2
+
+
+     /* ----------------- GUE2-D-C-update_bdd_password ----------------- */ 
+
+     insert_job: GUE2-D-C-update_bdd_password   job_type: CMD 
+     box_name: GUE2-D-B-UPDATE_PASSWORD
+     command: $${GUE2-FIX-bat_ora}/bdd_update_password.sh GUE2 GUE2WEB "$${GUE2-UPD-database_password}"
+     machine: gue2_pdbgue2_actif_v
+     owner: cdague2
+     permission: gx,wx
+     date_conditions: 0
+     description: "mise a jour du mot de passe"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-C-restart_appli ----------------- */ 
+
+     insert_job: GUE2-D-C-restart_appli   job_type: CMD 
+     box_name: GUE2-D-B-UPDATE_PASSWORD
+     command: /home/gue2/appli/expl/proc/wildfly.sh restart all
+     machine: gue2_wlf1_actif_v
+     owner: gue2
+     permission: gx,wx
+     date_conditions: 0
+     condition: s(GUE2-D-B-APP_UPDATE_PASSWORD)
+     description: "redemarrage de l'application"
+     alarm_if_fail: 1
+     alarm_if_terminated: 1
+     application: GUE2
+
+
+     /* ----------------- GUE2-D-B-APP_UPDATE_PASSWORD ----------------- */ 
+
+     insert_job: GUE2-D-B-APP_UPDATE_PASSWORD   job_type: BOX 
+     box_name: GUE2-D-B-UPDATE_PASSWORD
+     owner: auto113
+     permission: ge,gx,we,wx
+     date_conditions: 0
+     condition: s(GUE2-D-C-update_bdd_password)
+     description: "vaulter les mdp dans la conf wildfly"
+     alarm_if_fail: 0
+     alarm_if_terminated: 0
+     application: GUE2
+
+
+      /* ----------------- GUE2-D-C-update_password_actif ----------------- */ 
+
+      insert_job: GUE2-D-C-update_password_actif   job_type: CMD 
+      box_name: GUE2-D-B-APP_UPDATE_PASSWORD
+      command: /home/gue2/appli/expl/proc/app_update_password_wrapper.sh update all gue2web "$${GUE2-UPD-database_password}"
+      machine: gue2_wlf1_actif_v
+      owner: gue2
+      permission: gx,wx
+      date_conditions: 0
+      description: "mise a jour du fichier standalone.xml actif"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      application: GUE2
+
+
+      /* ----------------- GUE2-D-C-update_password_passif ----------------- */ 
+
+      insert_job: GUE2-D-C-update_password_passif   job_type: CMD 
+      box_name: GUE2-D-B-APP_UPDATE_PASSWORD
+      command: /home/gue2/appli/expl/proc/app_update_password_wrapper.sh update all gue2web "$${GUE2-UPD-database_password}"
+      machine: gue2_wlf1_passif_v
+      owner: gue2
+      permission: gx,wx
+      date_conditions: 0
+      description: "mise a jour du fichier standalone.xml"
+      alarm_if_fail: 1
+      alarm_if_terminated: 1
+      application: GUE2
+
+
+   /* ----------------- GUE2-D-B-BDD_OPERATIONS ----------------- */ 
+
+   insert_job: GUE2-D-B-BDD_OPERATIONS   job_type: BOX 
+   box_name: GUE2-D-B-BDD_TOOLBOX
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "jobs ops bdd"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_livraison ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_livraison   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -d "$${GUE2-FIX-repbdf_ora}/sql_livraison/*.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Application de scripts sql de livraison et patchs en Base de donnees GUE2 schema GUE2ADM"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_maj_param_ostat ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_maj_param_ostat   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-bat_ora}/maj_param_ostat.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Mise a jour des parametres des statistiques oracle: a executer en cas d'ajout/suppresion d'objet en BDD"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_ooo_hebdo ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_ooo_hebdo   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-bat_ora}/ooo_hebdomadaire.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Execution a la demande des outils oracle hebdomadaires"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_ooo_mensuel ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_ooo_mensuel   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-bat_ora}/ooo_mensuel.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Execution a la demande des outils oracle Mensuel"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_ooo_quotidien ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_ooo_quotidien   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-bat_ora}/ooo_quotidien.sh
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Execution a la demande des outils oracle Quotidien"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_unlock_cdj ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_unlock_cdj   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_unlock_CDJ.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "debloque changement de journee gue2"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_check_connexion ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_check_connexion   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_Check_BDD_connexion.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Test de connexion a la base GUE2 avec le user schema GUE2ADM"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_grant_synonyme_gue2web ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_grant_synonyme_gue2web   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_grant_and_create_syn.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "Affectation des droits et synonymes pour user GUE2WEB sur objets QUE2ADM pour application web"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_unlock_user ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_unlock_user   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2_unlock_gue2web_account.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: dbague2
+    permission: gx,wx
+    date_conditions: 0
+    description: "Unlock du user gue2web"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_update_sequences ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_update_sequences   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_update_sequences.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: gx,wx
+    date_conditions: 0
+    description: "mise a jour des sequences bdd"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+    /* ----------------- GUE2-D-C-bdd_disable_hard_authentification ----------------- */ 
+
+    insert_job: GUE2-D-C-bdd_disable_hard_authentification   job_type: CMD 
+    box_name: GUE2-D-B-BDD_OPERATIONS
+    command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_disable_hard_authentication.sql"
+    machine: gue2_pdbgue2_actif_v
+    owner: gue2adm
+    permission: 
+    date_conditions: 0
+    description: "Desactive l authentification durcie pour acces applicatif GUE2"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    application: GUE2
+
+
+  /* ----------------- GUE2-D-B-CHECKLOG ----------------- */ 
+
+  insert_job: GUE2-D-B-CHECKLOG   job_type: BOX 
+  box_name: GUE2-D-B-TOOLBOX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "box pad de checklog"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-C-checklog_bdd ----------------- */ 
+
+   insert_job: GUE2-D-C-checklog_bdd   job_type: CMD 
+   box_name: GUE2-D-B-CHECKLOG
+   command: $${GUE2-FIX-bat_ora}/checklog.sh 1 BDD ;
+   machine: gue2_pdbgue2_actif_v
+   owner: gue2adm
+   permission: gx
+   date_conditions: 0
+   description: "checklog bdd"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-C-checklog_app ----------------- */ 
+
+   insert_job: GUE2-D-C-checklog_app   job_type: CMD 
+   box_name: GUE2-D-B-CHECKLOG
+   command: $${GUE2-FIX-bat}/checklog.sh 1 APP ;
+   machine: gue2_wlf1_actif_v
+   owner: gue2
+   permission: gx
+   date_conditions: 0
+   description: "checklog app"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   application: GUE2
+
+
+  /* ----------------- GUE2-D-B-START_APP_ACTIF ----------------- */ 
+
+  insert_job: GUE2-D-B-START_APP_ACTIF   job_type: BOX 
+  box_name: GUE2-D-B-TOOLBOX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Demarrage des composants applicatifs GUE2 sur le serveur actif"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_WLF_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-START_WLF_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Demarrage des instances wildfly"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-start_wlf_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-start_wlf_actif   job_type: CMD 
+    box_name: GUE2-D-B-START_WLF_ACTIF
+    command: $${GUE2-FIX-bat}/wildfly.sh start all
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_BMQ_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-START_BMQ_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-START_WLF_ACTIF)
+   description: "Demarrage du BridgeMq"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-start_bmq_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-start_bmq_actif   job_type: CMD 
+    box_name: GUE2-D-B-START_BMQ_ACTIF
+    command: $${GUE2-FIX-bat}/BridgeMQ.sh -start
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "demarrage BridgeMQ"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-START_WEBVERIF_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-START_WEBVERIF_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-START_BMQ_ACTIF)
+   description: "A DEFINIR"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-start_webverif_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-start_webverif_actif   job_type: CMD 
+    box_name: GUE2-D-B-START_WEBVERIF_ACTIF
+    command: $${GUE2-FIX-bat}/scan_webverif.sh -start
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "demarrage scan webverif"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-ACTIVATION_SUPERVISION_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-ACTIVATION_SUPERVISION_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-START_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-START_WEBVERIF_ACTIF)
+   description: "Activation de la supervision"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-activation_supervision_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-activation_supervision_actif   job_type: CMD 
+    box_name: GUE2-D-B-ACTIVATION_SUPERVISION_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e OFF -s AUTOSYS
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+  /* ----------------- GUE2-D-B-STOP_APP_ACTIF ----------------- */ 
+
+  insert_job: GUE2-D-B-STOP_APP_ACTIF   job_type: BOX 
+  box_name: GUE2-D-B-TOOLBOX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Arret des composants applicatifs GUE2"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-BLACKOUT_SUPERVISION_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-BLACKOUT_SUPERVISION_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "arret supervision"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-blackout_supervision_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-blackout_supervision_actif   job_type: CMD 
+    box_name: GUE2-D-B-BLACKOUT_SUPERVISION_ACTIF
+    command: /home/logiciel/blackout/blackout.ksh -t APP-SRV -a GUE2 -e ON -s AUTOSYS
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "A DEFINIR"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WLF_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WLF_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_BMQ_ACTIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_wlf_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_wlf_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WLF_ACTIF
+    command: "$${GUE2-FIX-bat}/wildfly.sh stop all"
+    machine: gue2_wlf1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret toutes instances Wildfly"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_BMQ_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_BMQ_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-STOP_WEBVERIF_ACTIF)
+   description: "STOP BridgeMq"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_bmq_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_bmq_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_BMQ_ACTIF
+    command: "$${GUE2-FIX-bat}/BridgeMQ.sh -stop"
+    machine: gue2_bmq1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "Arret du bridgeMQ"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-STOP_WEBVERIF_ACTIF ----------------- */ 
+
+   insert_job: GUE2-D-B-STOP_WEBVERIF_ACTIF   job_type: BOX 
+   box_name: GUE2-D-B-STOP_APP_ACTIF
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-BLACKOUT_SUPERVISION_ACTIF)
+   description: "STOP"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-stop_webverif_actif ----------------- */ 
+
+    insert_job: GUE2-D-C-stop_webverif_actif   job_type: CMD 
+    box_name: GUE2-D-B-STOP_WEBVERIF_ACTIF
+    command: $${GUE2-FIX-bat}/scan_webverif.sh -stop; $${GUE2-FIX-bat}/scan_webverif.sh -clean
+    machine: gue2_web1_actif_v
+    owner: gue2
+    permission: gx
+    date_conditions: 0
+    description: "stop scan webverif"
+    max_run_alarm: 10
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+  /* ----------------- GUE2-D-B-BASCULE_AND_START_APP_WEEKEND ----------------- */ 
+
+  insert_job: GUE2-D-B-BASCULE_AND_START_APP_WEEKEND   job_type: BOX 
+  box_name: GUE2-D-B-TOOLBOX
+  owner: auto113
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Wrapper pour bascule a froid le weekend"
+  alarm_if_fail: 0
+  alarm_if_terminated: 0
+  group: UNIX
+  application: GUE2
+
+
+   /* ----------------- GUE2-D-B-SET_APP_STATE_RUN ----------------- */ 
+
+   insert_job: GUE2-D-B-SET_APP_STATE_RUN   job_type: BOX 
+   box_name: GUE2-D-B-BASCULE_AND_START_APP_WEEKEND
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   description: "Lancer une bascule quand l'applis est stop: typiquement le weekend"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-set_app_state_run ----------------- */ 
+
+    insert_job: GUE2-D-C-set_app_state_run   job_type: CMD 
+    box_name: GUE2-D-B-SET_APP_STATE_RUN
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-appli_state=RUN"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "Changer la valleur de la variable state appli a run"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-B-RUN_BASCULE ----------------- */ 
+
+   insert_job: GUE2-D-B-RUN_BASCULE   job_type: BOX 
+   box_name: GUE2-D-B-BASCULE_AND_START_APP_WEEKEND
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-SET_APP_STATE_RUN)
+   description: "Appeler la box GUE2-D-B-BASCULE"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-run_bascule ----------------- */ 
+
+    insert_job: GUE2-D-C-run_bascule   job_type: CMD 
+    box_name: GUE2-D-B-RUN_BASCULE
+    command: sendevent -J GUE2-D-B-BASCULE -E FORCE_STARTJOB
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "Appel de la box de bascule"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+   /* ----------------- GUE2-D-C-delay_up_and_run_bascule ----------------- */ 
+
+   insert_job: GUE2-D-C-delay_up_and_run_bascule   job_type: CMD 
+   box_name: GUE2-D-B-BASCULE_AND_START_APP_WEEKEND
+   command: sleep 480
+   machine: roundrobin_as_manager
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-B-RUN_BASCULE)
+   description: "en attente du lancement de la bascule"
+   alarm_if_fail: 1
+   alarm_if_terminated: 1
+   group: UNIX
+   application: GUE2
+
+
+   /* ----------------- GUE2-D-B-RESET_APP_STATE ----------------- */ 
+
+   insert_job: GUE2-D-B-RESET_APP_STATE   job_type: BOX 
+   box_name: GUE2-D-B-BASCULE_AND_START_APP_WEEKEND
+   owner: auto113
+   permission: ge,gx,we,wx
+   date_conditions: 0
+   condition: s(GUE2-D-C-delay_up_and_run_bascule) & d(GUE2-D-B-BASCULE)
+   description: "Remettre la variable state app a son etat initial"
+   alarm_if_fail: 0
+   alarm_if_terminated: 0
+   group: UNIX
+   application: GUE2
+
+
+    /* ----------------- GUE2-D-C-reset_app_state ----------------- */ 
+
+    insert_job: GUE2-D-C-reset_app_state   job_type: CMD 
+    box_name: GUE2-D-B-RESET_APP_STATE
+    command: sendevent -E SET_GLOBAL -G "GUE2-UPD-appli_state=STOP"
+    machine: roundrobin_as_manager
+    owner: auto113
+    permission: ge,gx,we,wx
+    date_conditions: 0
+    description: "Changer la valleur de la variable state appli a stop"
+    alarm_if_fail: 1
+    alarm_if_terminated: 1
+    group: UNIX
+    application: GUE2
+
+
+/* ----------------- GUE2-M-B-PATCHING_SRV_UNIX ----------------- */ 
+
+insert_job: GUE2-M-B-PATCHING_SRV_UNIX   job_type: BOX 
+owner: auto113
+permission: 
+date_conditions: 1
+run_calendar: STDF-vpmux_via_autosys
+start_times: "22:30"
+run_window: "22:30-06:00"
+description: "Patching Mensuel"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-M-C-set_go_upd_patching_state_srv ----------------- */ 
+
+ insert_job: GUE2-M-C-set_go_upd_patching_state_srv   job_type: CMD 
+ box_name: GUE2-M-B-PATCHING_SRV_UNIX
+ command: sendevent -E SET_GLOBAL -G "GUE2-UPD-patching_state_srv=GO"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: gx
+ date_conditions: 0
+ description: "Patching autorise"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- GUE2-Q-B-CHECK_BDD_SEQUENCES ----------------- */ 
+
+insert_job: GUE2-Q-B-CHECK_BDD_SEQUENCES   job_type: BOX 
+owner: auto113
+permission: gx
+date_conditions: 1
+days_of_week: mo,tu,we,th,fr
+exclude_calendar: FERIE_MF
+start_times: "06:30"
+run_window: "06:30-07:30"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE" & v(GUE2-UPD-appli_state) = "RUN" & v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(GUE2-UPD-pdbgue2_state_database_passif) = "START"
+description: "check sequences"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-Q-C-check_bdd_sequences ----------------- */ 
+
+ insert_job: GUE2-Q-C-check_bdd_sequences   job_type: CMD 
+ box_name: GUE2-Q-B-CHECK_BDD_SEQUENCES
+ command: $${GUE2-FIX-repbdf_ora}/autorunsql/autorunsql.sh -s -x "$${GUE2-FIX-repbdf_ora}/autorunsql/sql_catalog/GUE2ADM_check_sequences.sql"
+ machine: gue2_pdbgue2_actif_v
+ owner: gue2adm
+ permission: gx,wx
+ date_conditions: 0
+ description: "check des sequences"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ application: GUE2
+
+
+/* ----------------- GUE2-Q-B-CHECKLOG_BDD ----------------- */ 
+
+insert_job: GUE2-Q-B-CHECKLOG_BDD   job_type: BOX 
+owner: auto113
+permission: gx
+date_conditions: 1
+days_of_week: tu,we,th,fr,sa
+start_times: "06:00"
+run_window: "06:00-06:30"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE" & v(GUE2-UPD-appli_state) = "RUN" & v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(GUE2-UPD-pdbgue2_state_database_passif) = "START"
+description: "checklog bdd"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-Q-C-checklog_bdd ----------------- */ 
+
+ insert_job: GUE2-Q-C-checklog_bdd   job_type: CMD 
+ box_name: GUE2-Q-B-CHECKLOG_BDD
+ command: $${GUE2-FIX-bat_ora}/checklog.sh 1 BDD ;
+ machine: gue2_pdbgue2_actif_v
+ owner: gue2adm
+ permission: gx
+ date_conditions: 0
+ description: "checklog bdd"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ application: GUE2
+
+
+/* ----------------- GUE2-C-B-CHECKLOG_APP ----------------- */ 
+
+insert_job: GUE2-C-B-CHECKLOG_APP   job_type: BOX 
+owner: auto113
+permission: gx
+date_conditions: 1
+days_of_week: mo,tu,we,th,fr
+start_mins: 00,10,20,30,40,50
+run_window: "07:00-22:00"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE" & v(GUE2-UPD-appli_state) = "RUN" & v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(GUE2-UPD-pdbgue2_state_database_passif) = "START"
+description: "checklog app"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-C-C-checklog_app ----------------- */ 
+
+ insert_job: GUE2-C-C-checklog_app   job_type: CMD 
+ box_name: GUE2-C-B-CHECKLOG_APP
+ command: $${GUE2-FIX-bat}/checklog.sh 1 APP ;
+ machine: gue2_wlf1_actif_v
+ owner: gue2
+ permission: gx
+ date_conditions: 0
+ description: "checklog app"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ application: GUE2
+
+
+/* ----------------- ORACLE-H-B-GUE2_PDBGUE2_ACTIF ----------------- */ 
+
+insert_job: ORACLE-H-B-GUE2_PDBGUE2_ACTIF   job_type: BOX 
+owner: auto113
+permission: gx,wx
+date_conditions: 1
+days_of_week: sa
+start_times: "22:00"
+run_window: "22:00-05:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(ORACLE-UPD-quoti_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-cycle_gue2_pdbgue2_actif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_ACTIF) & n(GUE2-D-B-STOP_COMPLET_ACTIF)
+description: "servitude ORACLE applicative hebdomadaire"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_db_gatherstats_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_db_gatherstats_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_gatherStats.sh W
+ machine: gue2_pdbgue2_actif_v
+ owner: dbague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_actif)
+ description: "shell db_gatherStats.sh W"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_db_rman_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_db_rman_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_rman.sh W
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_run_actif)
+ description: "svg RMAN db_rman.sh W"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-H-DB_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/rman_purge_backups.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_db_rman_actif)
+ description: "shell rman_purge_backups.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_db_backup_ctl_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_db_backup_ctl_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_backup_ctl.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_db_gatherstats_actif)
+ description: "shell db_backup_ctl.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/svg_incr_rman.sh gue2
+ machine: gue2_pdbgue2_actif_v
+ owner: root
+ permission: 
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_actif)
+ description: "Sauvegarde TSM des backupset RMAN gue2"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-H-SVG_INCR_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_run_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_run_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-hebdo_gue2_pdbgue2_actif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_stop_actif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_stop_actif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-hebdo_gue2_pdbgue2_actif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_db_backup_ctl_actif) & d(ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_actif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- ORACLE-Q-B-GUE2_PDBGUE2_ACTIF ----------------- */ 
+
+insert_job: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF   job_type: BOX 
+owner: auto113
+permission: gx,wx
+date_conditions: 1
+days_of_week: su,mo,tu,we,th,fr
+start_times: "22:00"
+run_window: "22:00-05:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(ORACLE-UPD-cycle_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_actif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_ACTIF) & n(GUE2-D-B-STOP_COMPLET_ACTIF)
+description: "servitude ORACLE applicative quoti"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_db_gatherstats_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_db_gatherstats_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_gatherStats.sh D
+ machine: gue2_pdbgue2_actif_v
+ owner: dbague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_actif)
+ description: "shell db_gatherStats.sh D"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_db_rman_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_db_rman_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_rman.sh D
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_run_actif)
+ description: "svg RMAN db_rman.sh D"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-Q-DB_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/rman_purge_backups.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_db_rman_actif)
+ description: "shell rman_purge_backups.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_db_backup_ctl_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_db_backup_ctl_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_backup_ctl.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_db_gatherstats_actif)
+ description: "shell db_backup_ctl.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/svg_incr_rman.sh gue2
+ machine: gue2_pdbgue2_actif_v
+ owner: root
+ permission: 
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_actif)
+ description: "Sauvegarde TSM des backupset RMAN gue2"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-Q-SVG_INCR_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_run_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_run_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-quoti_gue2_pdbgue2_actif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_stop_actif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_stop_actif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-quoti_gue2_pdbgue2_actif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_db_backup_ctl_actif) & d(ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_actif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- ORACLE-C-B-GUE2_PDBGUE2_ACTIF ----------------- */ 
+
+insert_job: ORACLE-C-B-GUE2_PDBGUE2_ACTIF   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+days_of_week: all
+start_mins: 00
+run_window: "04:00-21:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(ORACLE-UPD-quoti_gue2_pdbgue2_actif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_actif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_ACTIF) & n(GUE2-D-B-STOP_COMPLET_ACTIF)
+description: "servitude ORACLE applicative cyclique"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_db_rman_actif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_db_rman_actif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_rman.sh C
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_run_actif)
+ description: "shell db_rman.sh C"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_db_free_fra_actif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_db_free_fra_actif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/db_free_fra.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_db_rman_actif)
+ description: "shell db_free_fra.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_actif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_actif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+ command: $${ORACLE-FIX-shell}/dg_ready_to_switch.sh
+ machine: gue2_pdbgue2_actif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_db_free_fra_actif)
+ description: "shell dg_ready_to_switch.sh"
+ n_retrys: 2
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_run_actif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_run_actif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-cycle_gue2_pdbgue2_actif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_stop_actif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_stop_actif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_ACTIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-cycle_gue2_pdbgue2_actif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_actif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- ORACLE-H-B-GUE2_PDBGUE2_PASSIF ----------------- */ 
+
+insert_job: ORACLE-H-B-GUE2_PDBGUE2_PASSIF   job_type: BOX 
+owner: auto113
+permission: gx,wx
+date_conditions: 1
+days_of_week: sa
+start_times: "22:00"
+run_window: "22:00-05:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_passif) = "START" & v(ORACLE-UPD-quoti_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-cycle_gue2_pdbgue2_passif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_PASSIF) & n(GUE2-D-B-STOP_COMPLET_PASSIF)
+description: "servitude ORACLE applicative hebdomadaire"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_passif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_passif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/rman_purge_backups.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_run_passif)
+ description: "shell rman_purge_backups.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_purge_redo_applied_passif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_purge_redo_applied_passif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/purge_redo_applied.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_rman_purge_backups_passif)
+ description: "purge_redo_applied.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_run_passif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_run_passif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-hebdo_gue2_pdbgue2_passif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_passif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_passif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/svg_incr_rman.sh gue2
+ machine: gue2_pdbgue2_passif_v
+ owner: root
+ permission: 
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_purge_redo_applied_passif)
+ description: "Sauvegarde TSM des backupset RMAN gue2"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-H-SVG_INCR_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-H-C-gue2_pdbgue2_stop_passif ----------------- */ 
+
+ insert_job: ORACLE-H-C-gue2_pdbgue2_stop_passif   job_type: CMD 
+ box_name: ORACLE-H-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-hebdo_gue2_pdbgue2_passif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-H-C-gue2_pdbgue2_svg_incr_rman_passif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- ORACLE-Q-B-GUE2_PDBGUE2_PASSIF ----------------- */ 
+
+insert_job: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF   job_type: BOX 
+owner: auto113
+permission: gx,wx
+date_conditions: 1
+days_of_week: su,mo,tu,we,th,fr
+start_times: "22:00"
+run_window: "22:00-05:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_passif) = "START" & v(ORACLE-UPD-cycle_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_passif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_PASSIF) & n(GUE2-D-B-STOP_COMPLET_PASSIF)
+description: "servitude ORACLE applicative quoti"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_passif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_passif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/rman_purge_backups.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_run_passif)
+ description: "shell rman_purge_backups.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_purge_redo_applied_passif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_purge_redo_applied_passif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/purge_redo_applied.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_rman_purge_backups_passif)
+ description: "shell purge_redo_applied.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_run_passif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_run_passif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-quoti_gue2_pdbgue2_passif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_passif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_passif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/svg_incr_rman.sh gue2
+ machine: gue2_pdbgue2_passif_v
+ owner: root
+ permission: 
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_purge_redo_applied_passif)
+ description: "Sauvegarde TSM des backupset RMAN gue2"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+ resources: (ORACLE-Q-SVG_INCR_RMAN_MAXCURRENT,QUANTITY=1,FREE=A)
+
+
+ /* ----------------- ORACLE-Q-C-gue2_pdbgue2_stop_passif ----------------- */ 
+
+ insert_job: ORACLE-Q-C-gue2_pdbgue2_stop_passif   job_type: CMD 
+ box_name: ORACLE-Q-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-quoti_gue2_pdbgue2_passif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-Q-C-gue2_pdbgue2_svg_incr_rman_passif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- ORACLE-C-B-GUE2_PDBGUE2_PASSIF ----------------- */ 
+
+insert_job: ORACLE-C-B-GUE2_PDBGUE2_PASSIF   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+days_of_week: all
+start_mins: 00
+run_window: "04:00-21:00"
+condition: v(GUE2-UPD-pdbgue2_state_database_passif) = "START" & v(ORACLE-UPD-quoti_gue2_pdbgue2_passif) = "STOP" & v(ORACLE-UPD-hebdo_gue2_pdbgue2_passif) = "STOP" & n(GUE2-D-B-BASCULE) & n(GUE2-D-B-START_COMPLET_PASSIF) & n(GUE2-D-B-STOP_COMPLET_PASSIF)
+description: "servitude ORACLE applicative cyclique"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_db_free_fra_passif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_db_free_fra_passif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/db_free_fra.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_run_passif)
+ description: "shell db_free_fra.sh"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_passif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_passif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+ command: $${ORACLE-FIX-shell}/dg_ready_to_switch.sh
+ machine: gue2_pdbgue2_passif_v
+ owner: cdague2
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_db_free_fra_passif)
+ description: "shell dg_ready_to_switch.sh"
+ n_retrys: 2
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_run_passif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_run_passif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-cycle_gue2_pdbgue2_passif=RUN"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Servitude ORACLE RUN"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+ /* ----------------- ORACLE-C-C-gue2_pdbgue2_stop_passif ----------------- */ 
+
+ insert_job: ORACLE-C-C-gue2_pdbgue2_stop_passif   job_type: CMD 
+ box_name: ORACLE-C-B-GUE2_PDBGUE2_PASSIF
+ command: sendevent -E SET_GLOBAL -G "ORACLE-UPD-cycle_gue2_pdbgue2_passif=STOP"
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(ORACLE-C-C-gue2_pdbgue2_dg_ready_to_switch_passif)
+ description: "Servitude ORACLE STOP"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
+
+
+/* ----------------- GUE2-Q-B-ADMIN ----------------- */ 
+
+insert_job: GUE2-Q-B-ADMIN   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+days_of_week: su,mo,tu,we,th,fr,sa
+start_times: "06:00"
+run_window: "06:00 - 23:30"
+condition: n(GUE2-D-B-BASCULE) & v(GUE2-UPD-etat_bascule) = "DONE" & v(GUE2-UPD-appli_state) = "RUN" & v(GUE2-UPD-pdbgue2_state_database_actif) = "START" & v(GUE2-UPD-pdbgue2_state_database_passif) = "START"
+description: "chaine d'adminstration"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-CHECK_CONFIG ----------------- */ 
+
+ insert_job: GUE2-Q-B-CHECK_CONFIG   job_type: BOX 
+ box_name: GUE2-Q-B-ADMIN
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ condition: d(GUE2-Q-B-BKP_WILDFLY_CFG)
+ description: "Script check config"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-check_config_ora1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-check_config_ora1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-CHECK_CONFIG
+  command: $${GUE2-FIX-bat_ora}/checkconfig.sh
+  machine: gue2_pdbgue2_actif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Check config ora1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-check_config_ora1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-check_config_ora1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-CHECK_CONFIG
+  command: $${GUE2-FIX-bat_ora}/checkconfig.sh
+  machine: gue2_pdbgue2_passif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Check config ora1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-check_config_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-check_config_wlf1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-CHECK_CONFIG
+  command: $${GUE2-FIX-bat}/checkconfig.sh
+  machine: gue2_wlf1_actif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Check config wlf1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-check_config_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-check_config_wlf1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-CHECK_CONFIG
+  command: $${GUE2-FIX-bat}/checkconfig.sh
+  machine: gue2_wlf1_passif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Check config wlf1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+ /* ----------------- GUE2-Q-B-BKP_WILDFLY_CFG ----------------- */ 
+
+ insert_job: GUE2-Q-B-BKP_WILDFLY_CFG   job_type: BOX 
+ box_name: GUE2-Q-B-ADMIN
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "Script backup wildfly"
+ alarm_if_fail: 0
+ alarm_if_terminated: 0
+ application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-bkp_wlf1_actif ----------------- */ 
+
+  insert_job: GUE2-Q-C-bkp_wlf1_actif   job_type: CMD 
+  box_name: GUE2-Q-B-BKP_WILDFLY_CFG
+  command: $${GUE2-FIX-bat}/bkp_wlfappcfg.sh
+  machine: gue2_wlf1_actif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Backup du fichier standalone wlf1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+  /* ----------------- GUE2-Q-C-bkp_wlf1_passif ----------------- */ 
+
+  insert_job: GUE2-Q-C-bkp_wlf1_passif   job_type: CMD 
+  box_name: GUE2-Q-B-BKP_WILDFLY_CFG
+  command: $${GUE2-FIX-bat}/bkp_wlfappcfg.sh
+  machine: gue2_wlf1_passif_v
+  owner: gue2
+  permission: ge,gx,we,wx
+  date_conditions: 0
+  description: "Backup du fichier standalone wlf1"
+  alarm_if_fail: 1
+  alarm_if_terminated: 1
+  application: GUE2
+
+
+/* ----------------- GUE2-M-B-BASCULE ----------------- */ 
+
+insert_job: GUE2-M-B-BASCULE   job_type: BOX 
+owner: auto113
+permission: ge,gx,we,wx
+date_conditions: 1
+run_calendar: 1ER_LUNDI_MOIS
+start_times: "20:00"
+run_window: "20:00-21:00"
+description: "Bascule mensuelle dediee a l'integration"
+alarm_if_fail: 0
+alarm_if_terminated: 0
+group: UNIX
+application: GUE2
+
+
+ /* ----------------- GUE2-M-C-invoke_bascule ----------------- */ 
+
+ insert_job: GUE2-M-C-invoke_bascule   job_type: CMD 
+ box_name: GUE2-M-B-BASCULE
+ command: sendevent -J GUE2-D-B-BASCULE -E FORCE_STARTJOB
+ machine: roundrobin_as_manager
+ owner: auto113
+ permission: ge,gx,we,wx
+ date_conditions: 0
+ description: "appel box de bascule"
+ alarm_if_fail: 1
+ alarm_if_terminated: 1
+ group: UNIX
+ application: GUE2
