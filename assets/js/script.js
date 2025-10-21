@@ -1,4 +1,3 @@
-
 class AutosysViewer {
     constructor() {
         this.boxes = new Map();
@@ -590,11 +589,6 @@ class AutosysViewer {
             header.classList.add('search-match');
         }
         
-        let conditionIcon = '';
-        if (box.attributes.condition) {
-            conditionIcon = '<i class="fas fa-link condition-indicator" title="A des dépendances"></i>';
-        }
-        
         header.innerHTML = `
             <i class="${this.getIconForType(box.type)}"></i>
             <span class="job-name">${box.name}</span>
@@ -857,7 +851,6 @@ class AutosysViewer {
         try {
             this.showLoading();
             
-            const originalScroll = document.getElementById('treeContainer').scrollTop;
             const originalStates = new Map();
             const allNodes = document.querySelectorAll('.tree-node');
             
@@ -958,8 +951,6 @@ class AutosysViewer {
                     }
                 }
             });
-            
-            document.getElementById('treeContainer').scrollTop = originalScroll;
             
             const link = document.createElement('a');
             link.download = `autosys-complet-${new Date().toISOString().split('T')[0]}.png`;
@@ -1225,17 +1216,22 @@ class AnimationManager {
     constructor(viewer) {
         this.viewer = viewer;
         this.isPlaying = false;
-        this.currentSpeed = 0.5; // RALENTI: 0.5x au lieu de 1x
+        this.currentSpeed = 0.5;
         this.animationInterval = null;
         this.executionQueue = [];
+        this.executionGroups = [];
         this.executedJobs = new Set();
         this.currentStep = 0;
+        
+        // Tracking des états des boxes
+        this.boxChildrenTracking = new Map();
     }
 
     startAnimation(startJobName) {
         console.log('🎬 Démarrage animation depuis:', startJobName);
 
         this.prepareAnimation();
+        this.initializeBoxTracking();
         this.calculateHierarchicalExecutionOrder(startJobName);
 
         if (this.executionQueue.length === 0) {
@@ -1243,72 +1239,89 @@ class AnimationManager {
             return;
         }
 
-        // CHANGEMENT: Mettre tous les jobs en gris au début
         this.setAllJobsToReady();
-
         this.showAnimationControls();
         this.startPlayback();
     }
 
-setAllJobsToReady() {
-    const allJobElements = document.querySelectorAll('.job-name');
-    allJobElements.forEach(element => {
-        element.classList.remove('job-executing', 'job-completed');
-        element.classList.add('job-ready');
-    });
-}
+    // Initialiser le tracking des enfants des boxes
+    initializeBoxTracking() {
+        this.boxChildrenTracking.clear();
+        
+        // Pour chaque box, initialiser le tracking de ses enfants
+        for (const [jobName, job] of this.viewer.boxes) {
+            if (job.type === 'BOX' && job.children && job.children.length > 0) {
+                this.boxChildrenTracking.set(jobName, {
+                    totalChildren: job.children.length,
+                    completedChildren: 0,
+                    childrenStatus: new Map(job.children.map(child => [child.name, false]))
+                });
+                console.log(`📦 Initialisation tracking pour ${jobName}: ${job.children.length} enfants`);
+            }
+        }
+    }
+
+    // Mettre à jour le statut d'un enfant
+    updateChildCompletion(parentBoxName, childName) {
+        const tracking = this.boxChildrenTracking.get(parentBoxName);
+        if (!tracking) return;
+
+        if (!tracking.childrenStatus.get(childName)) {
+            tracking.childrenStatus.set(childName, true);
+            tracking.completedChildren++;
+            console.log(`📊 ${parentBoxName}: ${tracking.completedChildren}/${tracking.totalChildren} enfants terminés`);
+        }
+
+        // Si tous les enfants sont terminés, marquer la box comme terminée
+        if (tracking.completedChildren === tracking.totalChildren) {
+            console.log(`🎉 TOUS les enfants de ${parentBoxName} sont terminés !`);
+            this.markBoxAsCompleted(parentBoxName);
+        }
+    }
+
+    // Marquer une box comme terminée
+    markBoxAsCompleted(boxName) {
+        const boxElement = this.findJobElement(boxName);
+        if (boxElement) {
+            const boxNameElement = boxElement.querySelector('.job-name');
+            if (boxNameElement && boxNameElement.classList.contains('job-executing')) {
+                console.log(`✅ ${boxName} -> COMPLETED`);
+                boxNameElement.classList.remove('job-executing');
+                boxNameElement.classList.add('job-completed');
+                
+                // Propager aux parents
+                const box = this.viewer.boxes.get(boxName);
+                if (box && box.parent) {
+                    this.updateChildCompletion(box.parent, boxName);
+                }
+            }
+        }
+    }
+
+    setAllJobsToReady() {
+        const allJobElements = document.querySelectorAll('.job-name');
+        allJobElements.forEach(element => {
+            element.classList.remove('job-executing', 'job-completed');
+            element.classList.add('job-ready');
+        });
+    }
 
     prepareAnimation() {
         this.isPlaying = false;
-        this.currentSpeed = 0.5; // Toujours démarrer à 0.5x
+        this.currentSpeed = 0.5;
         this.executionQueue = [];
+        this.executionGroups = [];
         this.executedJobs.clear();
         this.currentStep = 0;
+        this.boxChildrenTracking.clear();
         this.clearAnimationStyles();
     }
-
-//    calculateHierarchicalExecutionOrder(startJobName) {
-//        console.log('🔀 Calcul de l\'ordre hiérarchique');
-//        
-//        const visited = new Set();
-//        
-//        const processJobHierarchy = (jobName) => {
-//            if (visited.has(jobName)) return;
-//            visited.add(jobName);
-//            
-//            const job = this.viewer.boxes.get(jobName);
-//            if (!job) return;
-//            
-//            // Si c'est une BOX, d'abord traiter tous ses enfants
-//            if (job.type === 'BOX' && job.children && job.children.length > 0) {
-//                console.log(`📦 Box ${jobName} - Traitement des ${job.children.length} enfants`);
-//                
-//                // Traiter tous les enfants récursivement
-//                job.children.forEach(child => {
-//                    processJobHierarchy(child.name);
-//                });
-//            }
-//            
-//            // Ensuite ajouter le job parent (ou le job simple) à la queue
-//            this.executionQueue.push(jobName);
-//            console.log(`✅ Ajouté à la queue: ${jobName} (${job.type})`);
-//            
-//            // Enfin, traiter les jobs qui dépendent de celui-ci
-//            job.requiredBy.forEach(nextJob => {
-//                if (!visited.has(nextJob)) {
-//                    processJobHierarchy(nextJob);
-//                }
-//            });
-//        };
-//        
-//        processJobHierarchy(startJobName);
-//        console.log('📋 Ordre hiérarchique calculé:', this.executionQueue);
-//    }
 
     calculateHierarchicalExecutionOrder(startJobName) {
         console.log('🔀 Calcul de l\'ordre hiérarchique pour:', startJobName);
         
         const visited = new Set();
+        const allJobs = [];
         
         const processJobHierarchy = (jobName) => {
             if (visited.has(jobName)) return;
@@ -1317,26 +1330,344 @@ setAllJobsToReady() {
             const job = this.viewer.boxes.get(jobName);
             if (!job) return;
             
-            // CHANGEMENT: Si c'est une BOX, d'abord traiter tous ses enfants
+            // Traiter d'abord les dépendances
+            job.dependsOn.forEach(depName => {
+                if (this.viewer.boxes.has(depName) && !visited.has(depName)) {
+                    processJobHierarchy(depName);
+                }
+            });
+            
+            // Si c'est une BOX, traiter ses enfants avec la logique de parallélisation
             if (job.type === 'BOX' && job.children && job.children.length > 0) {
                 console.log(`📦 Box ${jobName} - Traitement des ${job.children.length} enfants`);
                 
-                // Traiter tous les enfants récursivement
-                job.children.forEach(child => {
-                    processJobHierarchy(child.name);
-                });
+                // Un seul enfant = pas de parallélisme
+                if (job.children.length === 1) {
+                    console.log(`   ℹ️  Un seul enfant - pas de parallélisme`);
+                    processJobHierarchy(job.children[0].name);
+                } else {
+                    // Identifier les enfants sans condition ET sans dépendances entre eux
+                    const independentChildren = this.findIndependentChildren(job.children);
+                    
+                    // Au moins 2 enfants pour faire du parallélisme
+                    if (independentChildren.length >= 2) {
+                        console.log(`   📊 Enfants indépendants: ${independentChildren.length}`);
+                        
+                        const parallelGroup = {
+                            parent: jobName,
+                            jobs: independentChildren.map(child => child.name),
+                            type: 'parallel'
+                        };
+                        this.executionGroups.push(parallelGroup);
+                        console.log(`   🔄 Groupe parallèle créé pour ${jobName}:`, parallelGroup.jobs);
+                        
+                        // Marquer les enfants parallèles comme visités
+                        independentChildren.forEach(child => {
+                            visited.add(child.name);
+                        });
+                    } else {
+                        console.log(`   ℹ️  Pas assez d'enfants indépendants pour le parallélisme`);
+                    }
+                    
+                    // Traiter tous les enfants (séquentiellement ou déjà traités en parallèle)
+                    job.children.forEach(child => {
+                        if (!visited.has(child.name)) {
+                            processJobHierarchy(child.name);
+                        }
+                    });
+                }
             }
             
-            // Ensuite ajouter le job parent (ou le job simple) à la queue
-            this.executionQueue.push(jobName);
-            console.log(`✅ Ajouté à la queue: ${jobName} (${job.type})`);
-            
-            // CHANGEMENT SUPPRIMÉ: NE PAS traiter les jobs qui dépendent de celui-ci
-            // On s'arrête à la box sélectionnée et ses enfants
+            // Ajouter le job à la queue seulement s'il n'est pas déjà dans un groupe parallèle
+            if (!this.isInParallelGroup(jobName)) {
+                allJobs.push(jobName);
+                console.log(`✅ Ajouté à la queue: ${jobName} (${job.type})`);
+            }
         };
         
         processJobHierarchy(startJobName);
-        console.log('📋 Ordre hiérarchique calculé (uniquement la box et ses enfants):', this.executionQueue);
+        
+        // Construire la queue finale en éliminant les doublons
+        this.buildFinalExecutionQueue(allJobs);
+        
+        console.log('📋 Ordre d\'exécution final:', this.executionQueue);
+        console.log('📦 Groupes parallèles:', this.executionGroups);
+    }
+
+    // Ne pas traiter les BOX comme des jobs normaux dans la queue
+    buildFinalExecutionQueue(allJobs) {
+        const finalQueue = [];
+        const processed = new Set();
+        
+        const processJob = (jobName) => {
+            if (processed.has(jobName)) {
+                console.log(`⚠️  Job ${jobName} déjà traité - évité le doublon`);
+                return;
+            }
+            processed.add(jobName);
+            
+            const job = this.viewer.boxes.get(jobName);
+            if (!job) return;
+            
+            // Traiter d'abord les dépendances
+            job.dependsOn.forEach(depName => {
+                if (this.viewer.boxes.has(depName)) {
+                    processJob(depName);
+                }
+            });
+            
+            // Ne pas ajouter les BOX à la queue d'exécution
+            // Les BOX sont des conteneurs, pas des jobs exécutables
+            if (job.type === 'BOX') {
+                console.log(`📦 Box ${jobName} traitée comme conteneur, pas ajoutée à la queue`);
+                
+                // Mais traiter ses enfants
+                if (job.children && job.children.length > 0) {
+                    const parallelGroup = this.executionGroups.find(group => 
+                        group.parent === jobName
+                    );
+                    
+                    if (parallelGroup) {
+                        console.log(`🔄 Insertion du groupe parallèle pour ${jobName}`);
+                        finalQueue.push(parallelGroup);
+                        
+                        // Marquer les jobs du groupe comme traités
+                        parallelGroup.jobs.forEach(childName => {
+                            processed.add(childName);
+                        });
+                    } else {
+                        // Traiter les enfants séquentiellement
+                        job.children.forEach(child => {
+                            processJob(child.name);
+                        });
+                    }
+                }
+            } else {
+                // Ajouter seulement les jobs CMD/FT à la queue
+                finalQueue.push(jobName);
+                console.log(`✅ Ajouté à la queue: ${jobName} (${job.type})`);
+            }
+        };
+        
+        // Traiter tous les jobs dans l'ordre initial en évitant les doublons
+        allJobs.forEach(jobName => {
+            processJob(jobName);
+        });
+        
+        this.executionQueue = finalQueue;
+        console.log('📋 Queue d\'exécution finale (sans BOX):', this.executionQueue);
+    }
+
+    // Trouver les enfants qui peuvent s'exécuter en parallèle (au moins 2)
+    findIndependentChildren(children) {
+        const independentChildren = [];
+        
+        children.forEach(child => {
+            // Un enfant est indépendant s'il n'a pas de condition ET n'a pas de dépendances
+            const hasNoCondition = !child.attributes.condition && child.dependsOn.length === 0;
+            
+            // Vérifier qu'il ne dépend d'aucun autre enfant de la même box
+            const dependsOnSibling = child.dependsOn.some(dep => 
+                children.some(sibling => sibling.name === dep)
+            );
+            
+            if (hasNoCondition && !dependsOnSibling) {
+                independentChildren.push(child);
+            }
+        });
+        
+        // Retourner seulement s'il y a au moins 2 enfants indépendants
+        return independentChildren.length >= 2 ? independentChildren : [];
+    }
+
+    runAnimationStep() {
+        if (!this.isPlaying || this.currentStep >= this.executionQueue.length) {
+            this.isPlaying = false;
+            this.updatePlayButton();
+            console.log('✅ Animation terminée');
+            return;
+        }
+
+        const currentItem = this.executionQueue[this.currentStep];
+        
+        // Vérifier si c'est un job déjà exécuté
+        if (typeof currentItem === 'string' && this.executedJobs.has(currentItem)) {
+            console.log(`⏭️  Job ${currentItem} déjà exécuté - passage au suivant`);
+            this.currentStep++;
+            this.updateProgress();
+            this.runAnimationStep();
+            return;
+        }
+        
+        if (currentItem && typeof currentItem === 'object' && currentItem.type === 'parallel') {
+            console.log(`🎯 Étape ${this.currentStep + 1}: Groupe parallèle de ${currentItem.jobs.length} jobs`, currentItem.jobs);
+            this.executeParallelGroup(currentItem);
+        } else {
+            const job = this.viewer.boxes.get(currentItem);
+            console.log(`🎯 Étape ${this.currentStep + 1}: ${currentItem} (${job?.type})`);
+            this.executeJob(currentItem);
+        }
+        
+        this.currentStep++;
+        this.updateProgress();
+
+        const delay = 1500 / this.currentSpeed;
+        this.animationInterval = setTimeout(() => {
+            this.runAnimationStep();
+        }, delay);
+    }
+
+    // Exécuter un groupe parallèle - ANIMATION SIMPLIFIÉE
+    executeParallelGroup(parallelGroup) {
+        const { parent: parentBoxName, jobs: jobNames } = parallelGroup;
+        console.log(`🔄 Début de l'exécution parallèle pour ${jobNames.length} jobs de ${parentBoxName}`);
+        
+        const jobsToExecute = jobNames.filter(jobName => !this.executedJobs.has(jobName));
+        
+        if (jobsToExecute.length === 0) return;
+
+        // Mettre la box parente en état "executing"
+        if (parentBoxName) {
+            this.setParentBoxToExecuting(parentBoxName);
+        }
+        
+        let completedCount = 0;
+        const totalJobs = jobsToExecute.length;
+        
+        jobsToExecute.forEach(jobName => {
+            const jobElement = this.findJobElement(jobName);
+            if (jobElement) {
+                const jobNameElement = jobElement.querySelector('.job-name');
+                if (jobNameElement) {
+                    jobNameElement.classList.remove('job-ready');
+                    jobNameElement.classList.add('job-executing'); // UNIQUEMENT job-executing
+                }
+                
+                this.expandJobAndParents(jobName);
+                jobElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                setTimeout(() => {
+                    if (jobNameElement) {
+                        jobNameElement.classList.remove('job-executing');
+                        jobNameElement.classList.add('job-completed');
+                    }
+                    
+                    this.executedJobs.add(jobName);
+                    completedCount++;
+                    console.log(`✅ Job parallèle terminé: ${jobName} (${completedCount}/${totalJobs})`);
+                    
+                    // Mettre à jour le tracking
+                    if (parentBoxName) {
+                        this.updateChildCompletion(parentBoxName, jobName);
+                    }
+                }, 1200 / this.currentSpeed);
+            }
+        });
+    }
+
+    // Exécuter un job - ANIMATION SIMPLIFIÉE
+    executeJob(jobName) {
+        if (this.executedJobs.has(jobName)) {
+            return;
+        }
+        
+        const jobElement = this.findJobElement(jobName);
+        if (!jobElement) {
+            console.warn(`❌ Job non trouvé: ${jobName}`);
+            return;
+        }
+
+        const job = this.viewer.boxes.get(jobName);
+        const jobNameElement = jobElement.querySelector('.job-name');
+        
+        if (!jobNameElement) return;
+
+        // Mettre en état "executing" (vert clignotant)
+        jobNameElement.classList.remove('job-ready');
+        jobNameElement.classList.add('job-executing');
+
+        // Mettre la box parente en état "executing"
+        if (job && job.parent) {
+            this.setParentBoxToExecuting(job.parent);
+        }
+
+        this.expandJobAndParents(jobName);
+        jobElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Simuler l'exécution
+        setTimeout(() => {
+            jobNameElement.classList.remove('job-executing');
+            jobNameElement.classList.add('job-completed');
+            
+            this.executedJobs.add(jobName);
+            console.log(`✅ Job terminé: ${jobName}`);
+
+            // Vérifier la box parente
+            if (job && job.parent) {
+                this.updateChildCompletion(job.parent, jobName);
+            }
+        }, 1200 / this.currentSpeed);
+    }
+
+    isInParallelGroup(jobName) {
+        return this.executionGroups.some(group => 
+            group.jobs.includes(jobName)
+        );
+    }
+
+    expandJobAndParents(jobName) {
+        const job = this.viewer.boxes.get(jobName);
+        if (!job) return;
+        
+        this.expandJobElement(jobName);
+        
+        let currentJob = job;
+        while (currentJob && currentJob.parent) {
+            this.expandJobElement(currentJob.parent);
+            currentJob = this.viewer.boxes.get(currentJob.parent);
+        }
+    }
+
+    expandJobElement(jobName) {
+        const jobElement = this.findJobElement(jobName);
+        if (jobElement) {
+            jobElement.classList.add('expanded');
+            jobElement.classList.remove('collapsed');
+            
+            const childrenContainer = jobElement.querySelector('.children');
+            if (childrenContainer) {
+                childrenContainer.style.display = 'block';
+                childrenContainer.style.maxHeight = 'none';
+                childrenContainer.style.opacity = '1';
+                childrenContainer.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    findJobElement(jobName) {
+        const allNodes = document.querySelectorAll('.tree-node');
+        for (let node of allNodes) {
+            const header = node.querySelector('.job-name');
+            if (header) {
+                const text = header.textContent.trim();
+                if (text === jobName) {
+                    return node;
+                }
+            }
+        }
+        return null;
+    }
+
+    setParentBoxToExecuting(parentBoxName) {
+        const parentBoxElement = this.findJobElement(parentBoxName);
+        if (parentBoxElement) {
+            const parentNameElement = parentBoxElement.querySelector('.job-name');
+            if (parentNameElement && !parentNameElement.classList.contains('job-executing')) {
+                console.log(`📦 ${parentBoxName} -> EXECUTING`);
+                parentNameElement.classList.remove('job-ready', 'job-completed');
+                parentNameElement.classList.add('job-executing');
+            }
+        }
     }
 
     showAnimationControls() {
@@ -1349,12 +1680,12 @@ setAllJobsToReady() {
         this.updateProgress();
     }
 
-createAnimationControls() {
-    const controls = document.createElement('div');
-    controls.id = 'animationControls';
-    controls.className = 'animation-controls-overlay hidden';
-    
-controls.innerHTML = `
+    createAnimationControls() {
+        const controls = document.createElement('div');
+        controls.id = 'animationControls';
+        controls.className = 'animation-controls-overlay hidden';
+        
+        controls.innerHTML = `
     <div class="animation-header">
         <h3><i class="fas fa-play-circle"></i> Simulation d'exécution</h3>
         <button class="btn-close-animation">
@@ -1395,10 +1726,10 @@ controls.innerHTML = `
         </div>
     </div>
 `;
-    
-    document.body.appendChild(controls);
-    this.setupControlListeners();
-}
+        
+        document.body.appendChild(controls);
+        this.setupControlListeners();
+    }
 
     setupControlListeners() {
         document.getElementById('playPauseBtn').addEventListener('click', () => {
@@ -1421,257 +1752,14 @@ controls.innerHTML = `
     startPlayback() {
         this.isPlaying = true;
         this.updatePlayButton();
-        
-        // CHANGEMENT: Déplier progressivement pendant l'animation
         this.prepareBranchExpansion();
-        
         this.runAnimationStep();
     }
 
     prepareBranchExpansion() {
-        // Déplier seulement le job de départ au début
         if (this.executionQueue.length > 0) {
             const startJobName = this.executionQueue[0];
             this.expandJobElement(startJobName);
-        }
-    }
-
-    expandOnlySelectedBranch() {
-        // Trouver le premier job de la queue (le job de départ)
-        if (this.executionQueue.length > 0) {
-            const startJobName = this.executionQueue[0];
-            const startJob = this.viewer.boxes.get(startJobName);
-            
-            if (startJob) {
-                console.log(`📂 Dépliage de la branche: ${startJobName}`);
-                
-                // Déplier récursivement la branche à partir du job de départ
-                this.expandJobBranch(startJobName);
-            }
-        }
-    }
- 
-    expandJobElement(jobName) {
-        const jobElement = this.findJobElement(jobName);
-        if (jobElement) {
-            // Déplier le node
-            jobElement.classList.add('expanded');
-            jobElement.classList.remove('collapsed');
-            
-            // S'assurer que les enfants sont visibles
-            const childrenContainer = jobElement.querySelector('.children');
-            if (childrenContainer) {
-                childrenContainer.style.display = 'block';
-                childrenContainer.style.maxHeight = 'none';
-                childrenContainer.style.opacity = '1';
-                childrenContainer.style.pointerEvents = 'auto';
-            }
-        }
-    }
-
-    expandJobBranch(jobName) {
-        const jobElement = this.findJobElement(jobName);
-        if (jobElement) {
-            // Déplier ce job
-            jobElement.classList.add('expanded');
-            jobElement.classList.remove('collapsed');
-            
-            // Déplier les enfants s'il y en a
-            const job = this.viewer.boxes.get(jobName);
-            if (job && job.children && job.children.length > 0) {
-                job.children.forEach(child => {
-                    this.expandJobBranch(child.name);
-                });
-            }
-        }
-    }
-        
-    runAnimationStep() {
-        if (!this.isPlaying || this.currentStep >= this.executionQueue.length) {
-            this.isPlaying = false;
-            this.updatePlayButton();
-            console.log('✅ Animation terminée');
-            return;
-        }
-
-        const jobName = this.executionQueue[this.currentStep];
-        const job = this.viewer.boxes.get(jobName);
-        
-        console.log(`🎯 Étape ${this.currentStep + 1}: ${jobName} (${job?.type})`);
-        
-        this.executeJob(jobName);
-        this.currentStep++;
-        this.updateProgress();
-
-        // RALENTI: Délai augmenté à 1500ms au lieu de 1000ms
-        const delay = 1500 / this.currentSpeed;
-        this.animationInterval = setTimeout(() => {
-            this.runAnimationStep();
-        }, delay);
-    }
-
-executeJob(jobName) {
-    const jobElement = this.findJobElement(jobName);
-    if (jobElement) {
-        console.log(`✨ Animation job: ${jobName}`);
-        
-        const job = this.viewer.boxes.get(jobName);
-        
-        // Déplier la box et tous ses parents pour voir la hiérarchie
-        if (job) {
-            this.expandJobAndParents(jobName);
-        }
-        
-        // CHANGEMENT: Animation sur le NOM du job
-        const jobNameElement = jobElement.querySelector('.job-name');
-        if (jobNameElement) {
-            // Retirer le gris et mettre en vert (exécution)
-            jobNameElement.classList.remove('job-ready');
-            jobNameElement.classList.add('job-executing');
-        }
-        
-        // NOUVEAU: Si c'est un enfant, mettre la box parente en vert
-        if (job && job.parent) {
-            this.setParentBoxToExecuting(job.parent);
-        }
-        
-        // Faire défiler pour garder le job visible
-        jobElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
-setTimeout(() => {
-    // CHANGEMENT: Retirer le vert et mettre en bleu (terminé)
-    if (jobNameElement) {
-        jobNameElement.classList.remove('job-executing');
-        jobNameElement.classList.add('job-completed');
-    }
-    
-    // CORRECTION: Vérifier si la box parente peut passer en bleu SEULEMENT si c'est un enfant
-    // ET appeler la vérification pour TOUS les cas
-    if (job && job.parent) {
-        console.log(`🔄 Vérification parent ${job.parent} après fin de ${job.name}`);
-        this.checkParentBoxCompletion(job.parent);
-    }
-    
-    this.executedJobs.add(jobName);
-    
-}, 1200 / this.currentSpeed);
-    } else {
-        console.warn(`❌ Job non trouvé: ${jobName}`);
-    }
-}
-
-// NOUVELLE MÉTHODE: Mettre une box parente en état "en cours"
-setParentBoxToExecuting(parentBoxName) {
-    const parentBoxElement = this.findJobElement(parentBoxName);
-    if (parentBoxElement) {
-        const parentNameElement = parentBoxElement.querySelector('.job-name');
-        if (parentNameElement && !parentNameElement.classList.contains('job-executing')) {
-            console.log(`📦 Box parente ${parentBoxName} mise en cours`);
-            parentNameElement.classList.remove('job-ready', 'job-completed');
-            parentNameElement.classList.add('job-executing');
-            
-            // CORRECTION: Propager récursivement aux parents supérieurs
-            const parentJob = this.viewer.boxes.get(parentBoxName);
-            if (parentJob && parentJob.parent) {
-                this.setParentBoxToExecuting(parentJob.parent);
-            }
-        } else {
-            console.log(`📦 Box parente ${parentBoxName} déjà en cours`);
-        }
-    }
-}
-
-
-// CORRECTION: Vérifier si une box parente peut passer en "terminé"
-checkParentBoxCompletion(parentBoxName) {
-    const parentJob = this.viewer.boxes.get(parentBoxName);
-    if (!parentJob || !parentJob.children) return;
-    
-    console.log(`🔍 Vérification box parente ${parentBoxName} - ${parentJob.children.length} enfants`);
-    
-    // Vérifier si TOUS les enfants sont terminés
-    const allChildrenCompleted = parentJob.children.every(child => {
-        const childElement = this.findJobElement(child.name);
-        if (childElement) {
-            const childNameElement = childElement.querySelector('.job-name');
-            const isCompleted = childNameElement && childNameElement.classList.contains('job-completed');
-            console.log(`   ${child.name}: ${isCompleted ? 'TERMINÉ' : 'EN COURS'}`);
-            return isCompleted;
-        }
-        return false;
-    });
-    
-    if (allChildrenCompleted) {
-        const parentBoxElement = this.findJobElement(parentBoxName);
-        if (parentBoxElement) {
-            const parentNameElement = parentBoxElement.querySelector('.job-name');
-            if (parentNameElement && parentNameElement.classList.contains('job-executing')) {
-                console.log(`✅ Box parente ${parentBoxName} terminée (TOUS les enfants sont bleus)`);
-                parentNameElement.classList.remove('job-executing');
-                parentNameElement.classList.add('job-completed');
-                
-                // Propager aux parents supérieurs
-                if (parentJob.parent) {
-                    this.checkParentBoxCompletion(parentJob.parent);
-                }
-            }
-        }
-    } else {
-        console.log(`⏳ Box parente ${parentBoxName} en attente - enfants pas tous terminés`);
-    }
-}
-
-
-    expandJobAndParents(jobName) {
-        const job = this.viewer.boxes.get(jobName);
-        if (!job) return;
-        
-        // 1. Déplier le job lui-même
-        this.expandJobElement(jobName);
-        
-        // 2. Déplier tous ses parents récursivement
-        let currentJob = job;
-        while (currentJob && currentJob.parent) {
-            this.expandJobElement(currentJob.parent);
-            currentJob = this.viewer.boxes.get(currentJob.parent);
-        }
-        
-        // 3. Si c'est une BOX, déplier aussi ses enfants immédiats
-        if (job.type === 'BOX' && job.children) {
-            job.children.forEach(child => {
-                this.expandJobElement(child.name);
-            });
-            console.log(`📦 Box ${jobName} et ses ${job.children.length} enfants dépliés`);
-        }
-    }
-    findJobElement(jobName) {
-        const allNodes = document.querySelectorAll('.tree-node');
-        for (let node of allNodes) {
-            const header = node.querySelector('.job-name');
-            if (header) {
-                const text = header.textContent.trim();
-                if (text === jobName) {
-                    return node;
-                }
-            }
-        }
-        return null;
-    }
-        expandJobChildren(jobName) {
-        const job = this.viewer.boxes.get(jobName);
-        if (job && job.children && job.children.length > 0) {
-            console.log(`📂 Dépliage des enfants de: ${jobName}`);
-            job.children.forEach(child => {
-                this.expandJobElement(child.name);
-                
-                // Si l'enfant est une BOX avec des enfants, les déplier aussi
-                const childJob = this.viewer.boxes.get(child.name);
-                if (childJob && childJob.type === 'BOX' && childJob.children && childJob.children.length > 0) {
-                    childJob.children.forEach(grandChild => {
-                        this.expandJobElement(grandChild.name);
-                    });
-                }
-            });
         }
     }
 
@@ -1687,13 +1775,11 @@ checkParentBoxCompletion(parentBoxName) {
     }
 
     changeSpeed() {
-        // CHANGEMENT: Vitesses plus lentes
-        const speeds = [0.25, 0.5, 1, 2]; // 0.25x ajouté, 5x retiré
+        const speeds = [0.25, 0.5, 1, 2];
         const currentIndex = speeds.indexOf(this.currentSpeed);
         this.currentSpeed = speeds[(currentIndex + 1) % speeds.length];
         
         document.getElementById('speedBtn').textContent = this.currentSpeed + 'x';
-        console.log(`🎚 Vitesse changée: ${this.currentSpeed}x`);
         
         if (this.isPlaying) {
             clearTimeout(this.animationInterval);
@@ -1701,13 +1787,12 @@ checkParentBoxCompletion(parentBoxName) {
         }
     }
 
-resetAnimation() {
-    this.stopAnimation();
-    this.currentStep = 0;
-    this.clearAnimationStyles();
-    this.updateProgress();
-    console.log('🔄 Animation réinitialisée');
-}
+    resetAnimation() {
+        this.stopAnimation();
+        this.currentStep = 0;
+        this.clearAnimationStyles();
+        this.updateProgress();
+    }
 
     stopAnimation() {
         this.isPlaying = false;
@@ -1720,7 +1805,6 @@ resetAnimation() {
         
         document.body.classList.remove('animation-mode');
         this.clearAnimationStyles();
-        console.log('⏹ Animation arrêtée');
     }
 
     updatePlayButton() {
@@ -1737,26 +1821,29 @@ resetAnimation() {
         const progressText = document.getElementById('progressText');
         const progressFill = document.getElementById('progressFill');
         
+        const totalSteps = this.executionQueue.length;
+        
         if (progressText) {
-            progressText.textContent = `${this.currentStep}/${this.executionQueue.length}`;
+            progressText.textContent = `${this.currentStep}/${totalSteps}`;
         }
         
-        if (progressFill && this.executionQueue.length > 0) {
-            const progress = (this.currentStep / this.executionQueue.length) * 100;
+        if (progressFill && totalSteps > 0) {
+            const progress = (this.currentStep / totalSteps) * 100;
             progressFill.style.width = progress + '%';
         }
     }
 
-clearAnimationStyles() {
-    const allNameElements = document.querySelectorAll('.job-name');
-    allNameElements.forEach(element => {
-        element.classList.remove('job-ready', 'job-executing', 'job-completed');
-        // CHANGEMENT: Ajouter la couleur grise par défaut pour TOUS
-        element.classList.add('job-ready');
-    });
-}
+    clearAnimationStyles() {
+        const allNameElements = document.querySelectorAll('.job-name');
+        allNameElements.forEach(element => {
+            element.classList.remove('job-ready', 'job-executing', 'job-completed');
+            element.classList.add('job-ready');
+        });
+        this.executedJobs.clear();
+    }
 }
 
+// CSS pour l'animation - VERSION SIMPLIFIÉE
 const animationCSS = `
 .animation-controls-overlay {
     position: fixed;
@@ -1876,37 +1963,35 @@ const animationCSS = `
     border: 1px solid #ddd;
 }
 
-/* CORRECTION DES COULEURS DE LÉGENDE */
 .job-ready .color-box { 
-    background: #9ca3af !important;  /* GRIS */
+    background: #9ca3af !important;
     border-color: #6b7280 !important; 
 }
 .job-executing .color-box { 
-    background: #10b981 !important;   /* VERT */
+    background: #10b981 !important;
     border-color: #059669 !important; 
 }
 .job-completed .color-box { 
-    background: #3b82f6 !important;   /* BLEU */
+    background: #3b82f6 !important;
     border-color: #2563eb !important; 
 }
 
-/* CORRECTION DES COULEURS DES JOBS */
 .job-name.job-ready {
-    color: #9ca3af !important;  /* Gris pour les jobs en attente */
+    color: #9ca3af !important;
     font-weight: normal;
 }
+
 .job-name.job-executing {
-    color: #10b981 !important;  /* VERT pour l'exécution */
+    color: #10b981 !important;
     font-weight: bold;
-    text-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    animation: blink 1.5s ease-in-out infinite;
 }
 
 .job-name.job-completed {
-    color: #3b82f6 !important;  /* BLEU pour terminé */
+    color: #3b82f6 !important;
     font-weight: bold;
 }
 
-/* Supprimer les anciens styles sur les tree-node */
 .tree-node.job-ready,
 .tree-node.job-executing, 
 .tree-node.job-completed {
@@ -1916,12 +2001,6 @@ const animationCSS = `
     box-shadow: none;
 }
 
-/* Mode animation - garder l'arborescence normale */
-.animation-mode .tree-container {
-    /* Rien à changer - l'arborescence reste normale */
-}
-
-/* Bouton d'animation dans les détails */
 .btn-animate {
     background: var(--primary-color);
     color: white;
@@ -1954,21 +2033,20 @@ const animationCSS = `
     font-size: 0.8em;
 }
 
-/* Cacher les contrôles par défaut */
 .hidden {
     display: none !important;
 }
-.color-box.job-ready { 
-    background: #9ca3af !important;  /* GRIS */
-    border-color: #6b7280 !important; 
-}
-.color-box.job-executing { 
-    background: #10b981 !important;   /* VERT */
-    border-color: #059669 !important; 
-}
-.color-box.job-completed { 
-    background: #3b82f6 !important;   /* BLEU */
-    border-color: #2563eb !important; 
+
+/* Animation de clignotement pour l'état "executing" */
+@keyframes blink {
+    0%, 100% { 
+        opacity: 1;
+        text-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+    }
+    50% { 
+        opacity: 0.7;
+        text-shadow: 0 0 4px rgba(16, 185, 129, 0.3);
+    }
 }
 `;
 
@@ -1977,7 +2055,8 @@ const styleSheet = document.createElement('style');
 styleSheet.textContent = animationCSS;
 document.head.appendChild(styleSheet);
 
+// Initialiser l'application
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Application Autosys Viewer démarrée - AVEC ANIMATION COMPLÈTE');
+    console.log('🚀 Application Autosys Viewer démarrée - VERSION SIMPLIFIÉE');
     window.autosysViewer = new AutosysViewer();
 });
