@@ -2,24 +2,85 @@ import { JILParser } from './modules/jil-parser.js';
 import { TreeRenderer } from './modules/tree-renderer.js';
 import { ExportManager } from './modules/export-manager.js';
 import { EventManager } from './modules/event-manager.js';
+import { ComparisonManager } from './modules/comparison-manager.js';
+import { ComparisonRenderer } from './modules/comparison-renderer.js';
 
 class AutosysViewer {
     constructor() {
-        this.boxes = new Map();
-        this.rootBoxes = [];
-        this.filteredBoxes = new Map();
-        this.selectedJob = null;
-        this.currentFileContent = null;
+        console.log('🔍 AUTOSYSVIEWER: Constructeur appelé');
         
-        // init modules
-        this.jilParser = new JILParser();
-        this.treeRenderer = new TreeRenderer(this);
-        this.exportManager = new ExportManager(this);
-        this.eventManager = new EventManager(this);
+        try {
+            this.boxes = new Map();
+            this.rootBoxes = [];
+            this.filteredBoxes = new Map();
+            this.selectedJob = null;
+            this.currentFileContent = null;
+            this.currentMode = 'single';
+            
+            console.log('init modlules');
+            this.jilParser = new JILParser();
+            this.treeRenderer = new TreeRenderer(this);
+            this.exportManager = new ExportManager(this);
+            this.eventManager = new EventManager(this);
+            this.comparisonManager = new ComparisonManager(this);
+            this.comparisonRenderer = new ComparisonRenderer(this);
+            this.eventManager.initializeEventListeners();
+            this.eventManager.setupDragAndDrop();
+            
+            console.log('Constructeur ok');
+            
+        } catch (error) {
+            console.error('constructeur ko:', error);
+            throw error;
+        }
+    }
+
+    toggleMode(mode) {
+
+    this.currentMode = mode;
+    const singleMode = document.querySelector('.single-mode');
+    const compareMode = document.querySelector('.compare-mode');
+    const modeButtons = document.querySelectorAll('.btn-mode');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileStatus = document.getElementById('fileStatus');
+    
+    console.log('UI:', {
+        singleMode: !!singleMode,
+        compareMode: !!compareMode,
+        modeButtons: modeButtons.length,
+        fileInfo: !!fileInfo
+    });
+    
+    if (mode === 'compare') {
+        document.body.classList.add('compare-mode-active');
+        singleMode.classList.add('hidden');
+        compareMode.classList.remove('hidden');
+        modeButtons[0].classList.remove('active');
+        modeButtons[1].classList.add('active');
         
-        console.log('=== AUTOSYS VIEWER INIT ===');
-        this.eventManager.initializeEventListeners();
-        this.eventManager.setupDragAndDrop();
+        if (fileStatus) {
+            fileStatus.classList.add('hidden');
+        }
+        
+        console.log('comparaison ');
+    } else {
+        document.body.classList.remove('compare-mode-active');
+        singleMode.classList.remove('hidden');
+        compareMode.classList.add('hidden');
+        modeButtons[0].classList.add('active');
+        modeButtons[1].classList.remove('active');
+        
+        if (fileStatus) {
+            fileStatus.classList.remove('hidden');
+        }
+        
+        if (this.comparisonManager) {
+            this.comparisonManager.resetComparison();
+        }
+        console.log('visualistion');
+    }
+    
+    this.resetView();
     }
 
     async handleFileSelect(event) {
@@ -52,6 +113,27 @@ class AutosysViewer {
         }
     }
 
+    async handleCompareFileSelect(side, file) {
+        console.log(`Chargement fichier ${side}:`, file.name);
+        this.showLoading();
+
+        try {
+            const success = await this.comparisonManager.loadFile(side, file);
+            if (success) {
+                console.log(`fichier ${side} chargé avec succès`);
+            }
+        } catch (error) {
+            console.error(`Erreur lors du chargement du fichier ${side}:`, error);
+            alert(`Erreur lors du chargement du fichier ${side}: ${error.message}`);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async startComparison() {
+        await this.comparisonManager.compare();
+    }
+
     readFile(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -62,64 +144,74 @@ class AutosysViewer {
     }
 
     applyFilters() {
-        const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
-
-        this.filteredBoxes.clear();
-        const filteredRootBoxes = [];
-        const boxesToExpand = new Set();
-
-        const filterRecursive = (box) => {
-            const matchesSearch = searchTerm === '' || 
-                                box.name.toLowerCase().includes(searchTerm) || 
-                                (box.description && box.description.toLowerCase().includes(searchTerm));
-
-            let filteredChildren = [];
-            if (box.children && box.children.length > 0) {
-                box.children.forEach(child => {
-                    const filteredChild = filterRecursive(child);
-                    if (filteredChild) {
-                        filteredChildren.push(filteredChild);
-                        
-                        if (searchTerm && (child.name.toLowerCase().includes(searchTerm) || 
-                            (child.description && child.description.toLowerCase().includes(searchTerm)))) {
-                            boxesToExpand.add(box.name);
-                        }
-                    }
-                });
-            }
-
-            const shouldKeep = matchesSearch || filteredChildren.length > 0;
-
-            if (shouldKeep) {
-                const filteredBox = {
-                    ...box,
-                    children: filteredChildren
-                };
-                this.filteredBoxes.set(box.name, filteredBox);
-                return filteredBox;
-            }
-
-            return null;
-        };
-
-        this.rootBoxes.forEach(box => {
-            const filteredBox = filterRecursive(box);
-            if (filteredBox) {
-                filteredRootBoxes.push(filteredBox);
-            }
-        });
-
-        this.treeRenderer.renderTree(filteredRootBoxes);
-        this.updateJobCounter();
-        
-        if (searchTerm) {
-            setTimeout(() => this.treeRenderer.expandMatchingBoxes(boxesToExpand), 100);
+        if (this.currentMode === 'compare' && this.comparisonManager.result) {
+            this.comparisonRenderer.renderComparisonTree();
+            this.updateComparisonCounter();
         } else {
-            setTimeout(() => this.treeRenderer.collapseAll(), 100);
+            const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+
+            this.filteredBoxes.clear();
+            const filteredRootBoxes = [];
+            const boxesToExpand = new Set();
+
+            const filterRecursive = (box) => {
+                const matchesSearch = searchTerm === '' || 
+                                    box.name.toLowerCase().includes(searchTerm) || 
+                                    (box.description && box.description.toLowerCase().includes(searchTerm));
+
+                let filteredChildren = [];
+                if (box.children && box.children.length > 0) {
+                    box.children.forEach(child => {
+                        const filteredChild = filterRecursive(child);
+                        if (filteredChild) {
+                            filteredChildren.push(filteredChild);
+                            
+                            if (searchTerm && (child.name.toLowerCase().includes(searchTerm) || 
+                                (child.description && child.description.toLowerCase().includes(searchTerm)))) {
+                                boxesToExpand.add(box.name);
+                            }
+                        }
+                    });
+                }
+
+                const shouldKeep = matchesSearch || filteredChildren.length > 0;
+
+                if (shouldKeep) {
+                    const filteredBox = {
+                        ...box,
+                        children: filteredChildren
+                    };
+                    this.filteredBoxes.set(box.name, filteredBox);
+                    return filteredBox;
+                }
+
+                return null;
+            };
+
+            this.rootBoxes.forEach(box => {
+                const filteredBox = filterRecursive(box);
+                if (filteredBox) {
+                    filteredRootBoxes.push(filteredBox);
+                }
+            });
+
+            this.treeRenderer.renderTree(filteredRootBoxes);
+            
+            if (searchTerm) {
+                setTimeout(() => this.treeRenderer.expandMatchingBoxes(boxesToExpand), 100);
+            } else {
+                setTimeout(() => this.treeRenderer.collapseAll(), 100);
+            }
         }
+        this.updateJobCounter();
     }
 
     updateJobCounter() {
+        if (this.currentMode === 'compare' && this.comparisonManager.result) {
+            this.updateComparisonCounter();
+            return;
+        }
+
         const totalJobs = this.boxes.size;
         const filteredJobs = this.filteredBoxes.size;
         const counter = document.getElementById('jobCounter');
@@ -131,13 +223,41 @@ class AutosysViewer {
         }
     }
 
+    updateComparisonCounter() {
+        const counter = document.getElementById('jobCounter');
+        if (!this.comparisonManager.result) {
+            counter.textContent = '0 jobs';
+            return;
+        }
+
+        const { newJobs, deletedJobs, modifiedJobs, identicalJobs } = this.comparisonManager.result;
+        const totalJobs = newJobs.length + deletedJobs.length + modifiedJobs.length + identicalJobs.length;
+        
+        counter.textContent = `${totalJobs} jobs comparés`;
+    }
+
     selectJob(job) {
         this.treeRenderer.selectJob(job);
         this.selectedJob = job;
-        this.showJobDetails(job);
+        
+        if (this.currentMode === 'compare' && this.comparisonManager.result) {
+            this.showComparisonJobDetails(job);
+        } else {
+            this.showNormalJobDetails(job);
+        }
     }
 
-    showJobDetails(job) {
+    showComparisonJobDetails(job) {
+        const detailsContent = document.getElementById('detailsContent');
+        const detailsPanel = document.getElementById('detailsPanel');
+        
+        detailsPanel.querySelector('.empty-details').classList.add('hidden');
+        detailsContent.classList.remove('hidden');
+
+        detailsContent.innerHTML = this.comparisonRenderer.renderComparisonDetails(job);
+    }
+
+    showNormalJobDetails(job) {
         const detailsContent = document.getElementById('detailsContent');
         const detailsPanel = document.getElementById('detailsPanel');
         
@@ -271,9 +391,8 @@ class AutosysViewer {
 
     formatCondition(condition) {
         if (!condition) return '';
-
-        let formatted = condition.replace(/(v\([^)]+\))/g, '<span class="global-variable" title="Variable globale">$1</span>');
         
+        let formatted = condition.replace(/(v\([^)]+\))/g, '<span class="global-variable" title="Variable globale">$1</span>');
         formatted = formatted.replace(/(&|\|)/g, '<span class="logic-operator"> $1 </span>');
         
         return formatted;
@@ -282,7 +401,10 @@ class AutosysViewer {
     resetView() {
         document.getElementById('searchFilter').value = '';
         this.applyFilters();
-        this.treeRenderer.collapseAll();
+        
+        if (this.currentMode === 'single') {
+            this.treeRenderer.collapseAll();
+        }
         
         this.selectedJob = null;
         document.querySelectorAll('.tree-node.selected').forEach(item => {
@@ -310,10 +432,59 @@ class AutosysViewer {
     hideAboutModal() {
         document.getElementById('aboutModal').classList.add('hidden');
     }
+
+    exportToPNG() {
+        this.exportManager.exportToPNG();
+    }
+
+    exportToPDF() {
+        this.exportManager.exportToPDF();
+    }
+
+    exportToHTML() {
+        this.exportManager.exportToHTML();
+    }
+
+    expandAll() {
+        this.treeRenderer.expandAll();
+    }
+
+    collapseAll() {
+        this.treeRenderer.collapseAll();
+    }
 }
 
-// init app
+// initialisation
+console.log('🔍 État du DOM:', {
+    readyState: document.readyState,
+    autosysViewer: window.autosysViewer
+});
+
+if (document.readyState === 'loading') {
+    console.log('🔍 DOM encore en chargement - on attend DOMContentLoaded');
+} else {
+    console.log('🔍 DOM déjà chargé - initialisation immédiate');
+    try {
+        window.autosysViewer = new AutosysViewer();
+        console.log('iitialisé IMMEDIAT OK');
+    } catch (error) {
+        console.error('initialisation immédiate KO:', error);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Application Autosys Viewer démarrée - VERSION MODULAIRE');
-    window.autosysViewer = new AutosysViewer();
+    console.log('🚀 demarrage app');
+    console.log('🔍 autosysViewer avant initialisation:', window.autosysViewer);
+    
+    try {
+        if (!window.autosysViewer) {
+            window.autosysViewer = new AutosysViewer();
+            console.log('✅ AUTOSYSVIEWER: Initialisé dans DOMContentLoaded');
+        } else {
+            console.log('ℹ️ AUTOSYSVIEWER: Déjà initialisé');
+        }
+    } catch (error) {
+        console.error('❌ ERREUR dans AutosysViewer:', error);
+        console.error('Stack:', error.stack);
+    }
 });

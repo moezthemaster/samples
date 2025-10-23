@@ -128,3 +128,15 @@
 .fa-play::before { content: "\f04b"; }
 .fa-pause::before { content: "\f04c"; }
 .fa-play-circle::before { content: "\f144"; }
+
+/* comparaison */
+
+.fa-file::before { content: "\f15b"; }
+.fa-code-compare::before { content: "\f13a"; }
+.fa-file-code::before { content: "\f1c9"; }
+.fa-play-circle::before { content: "\f144"; }
+.fa-plus-circle::before { content: "\f055"; }
+.fa-minus-circle::before { content: "\f056"; }
+.fa-pencil-alt::before { content: "\f303"; }
+.fa-check-circle::before { content: "\f058"; }
+.fa-list::before { content: "\f03a"; }

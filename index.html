@@ -39,13 +39,59 @@
                 <div class="sidebar-content">
                     <!-- Upload Section -->
                     <div class="upload-section">
-                        <div class="file-upload-area" id="uploadArea">
+                        <div class="upload-mode-toggle">
+                            <button class="btn-mode active" id="modeSingle">
+                                <i class="fas fa-file"></i> Mode Visualisation
+                            </button>
+                            <button class="btn-mode" id="modeCompare">
+                                <i class="fas fa-code-compare"></i> Mode Comparaison
+                            </button>
+                        </div>
+                        
+                        <!-- Mode Simple (existant) -->
+                        <div class="file-upload-area single-mode" id="uploadArea">
                             <i class="fas fa-cloud-upload-alt"></i>
                             <h3>Charger un fichier JIL</h3>
                             <p>Glissez-déposez ou cliquez pour sélectionner</p>
                             <input type="file" id="fileInput" accept=".jil,.txt" hidden>
                             <button class="btn-primary" id="browseBtn">
                                 <i class="fas fa-folder-open"></i> Parcourir
+                            </button>
+                        </div>                  
+
+                        <!-- Mode Comparaison (nouveau) -->
+                        <div class="compare-mode hidden">
+                            <div class="compare-upload-areas">
+                                <div class="compare-area" data-side="left">
+                                    <i class="fas fa-file-code"></i>
+                                    <h4>Fichier A</h4>
+                                    <div class="compare-drop-zone" id="compareDropLeft">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <input type="file" class="compare-file-input" data-side="left" accept=".jil,.txt" hidden>
+                                    </div>
+                                    <div class="file-info-compare" id="fileInfoLeft">
+                                        <i class="fas fa-info-circle"></i> Aucun fichier
+                                    </div>
+                                </div>
+                                
+                                <div class="vs-separator">
+                                    <i class="fas fa-code-compare"></i> VS
+                                </div>
+                                
+                                <div class="compare-area" data-side="right">
+                                    <i class="fas fa-file-code"></i>
+                                    <h4>Fichier B</h4>
+                                    <div class="compare-drop-zone" id="compareDropRight">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <input type="file" class="compare-file-input" data-side="right" accept=".jil,.txt" hidden>
+                                    </div>
+                                    <div class="file-info-compare" id="fileInfoRight">
+                                        <i class="fas fa-info-circle"></i> Aucun fichier
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-primary compare-btn hidden" id="startCompare">
+                                <i class="fas fa-play-circle"></i> Lancer la comparaison
                             </button>
                         </div>
                     </div>
@@ -91,6 +137,9 @@
                                 <div class="file-status" id="fileStatus">
                                     <span class="file-info" id="fileInfo">Aucun fichier chargé</span>
                                 </div>
+                                <div class="compare-status hidden" id="compareStatus">
+                                    <!-- Rempli dynamiquement -->
+                                </div>
                             </div>
                             <span class="counter" id="jobCounter">0 jobs</span>
                         </div>
@@ -135,7 +184,7 @@
                     <div class="app-info">
                         <h4>Application JIL Viewer</h4>
                         <p>Outil de visualisation et d'analyse des fichiers JIL Autosys</p>
-                        <div class="version">Version 1.0.0</div>
+                        <div class="version">Version 2.0.0</div>
                     </div>
                     
                     <div class="developer-card">
@@ -163,10 +212,13 @@
                     </div>
 
                     <!--div class="features-list">
-                        <h5>Fonctionnalités :</h5>
+                        <h5>Nouvelles fonctionnalités :</h5>
                         <ul>
+                            <li>Comparaison de fichiers JIL (DEV vs PROD)</li>
+                            <li>Détection des jobs nouveaux/supprimés/modifiés</li>
+                            <li>Visualisation côte à côte des différences</li>
                             <li>Visualisation hiérarchique des jobs Autosys</li>
-                            <li>Filtrage et recherche</li>
+                            <li>Filtrage et recherche avancée</li>
                             <li>Export PNG, PDF et HTML</li>
                         </ul>
                     </div-->
@@ -184,6 +236,6 @@
 
     <script src="lib/html2canvas.min.js"></script>
     <script src="lib/jspdf.umd.min.js"></script>
-    <script type="module" src="assets/js/script.js"></script>
+    <script type="module" src="assets/js/debug-init.js"></script>
 </body>
 </html>
