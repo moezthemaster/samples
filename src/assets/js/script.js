@@ -1,3 +1,7 @@
+import '../css/styles.css';
+//import '../fonts/fontawesome.css';
+import '../fonts/all.min.css';
+
 import { JILParser } from './modules/jil-parser.js';
 import { TreeRenderer } from './modules/tree-renderer.js';
 import { ExportManager } from './modules/export-manager.js';
