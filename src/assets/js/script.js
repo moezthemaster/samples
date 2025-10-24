@@ -29,7 +29,6 @@ class AutosysViewer {
             this.comparisonManager = new ComparisonManager(this);
             this.comparisonRenderer = new ComparisonRenderer(this);
             this.eventManager.initializeEventListeners();
-            this.eventManager.setupDragAndDrop();
             
             console.log('Constructeur ok');
             
@@ -98,7 +97,7 @@ class AutosysViewer {
             const content = await this.readFile(file);
             this.currentFileContent = content;
             
-            const fileInfoElement = document.getElementById('fileInfo');
+            const fileInfoElement = document.getElementById('fileInfoSingle');
             fileInfoElement.textContent = `${file.name} • ${(file.size / 1024).toFixed(2)} KB`;
             fileInfoElement.style.color = 'var(--accent-color)';
             fileInfoElement.style.fontWeight = '600';

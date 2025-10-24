@@ -5,13 +5,78 @@ export class EventManager {
 
     initializeEventListeners() {
         console.log('🔧 Initialisation de tous les événements');
-        this.setupFileEvents();
         this.setupFilterEvents();
         this.setupExportEvents();
         this.setupActionEvents();
         this.setupModalEvents();
         this.setupComparisonEvents();
+        this.setupNewUploadSystem(); // Nouveau système unifié
         console.log('✅ Tous les événements initialisés');
+    }
+
+    setupNewUploadSystem() {
+        console.log('🔧 Configuration du système d\'upload unifié');
+        
+        const singleDropZone = document.getElementById('singleDropZone');
+        const singleFileInput = document.getElementById('fileInput');
+    
+        if (!singleDropZone || !singleFileInput) {
+            console.log('❌ Éléments du nouveau système non trouvés');
+            return;
+        }
+    
+        // Clic sur la zone de drop
+        singleDropZone.addEventListener('click', () => {
+            console.log('🖱️ Zone d\'upload cliquée');
+            singleFileInput.click();
+        });
+    
+        // Gestion de la sélection de fichier
+        singleFileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                console.log('📁 Fichier sélectionné:', e.target.files[0].name);
+                this.viewer.handleFileSelect(e);
+            }
+        });
+    
+        // Drag & drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            singleDropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+    
+        ['dragenter', 'dragover'].forEach(eventName => {
+            singleDropZone.addEventListener(eventName, () => {
+                singleDropZone.classList.add('drag-over');
+                singleDropZone.closest('.compare-area').classList.add('drag-over');
+            });
+        });
+    
+        ['dragleave', 'drop'].forEach(eventName => {
+            singleDropZone.addEventListener(eventName, () => {
+                singleDropZone.classList.remove('drag-over');
+                singleDropZone.closest('.compare-area').classList.remove('drag-over');
+            });
+        });
+    
+        singleDropZone.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                console.log('📦 Fichier déposé:', file.name);
+                
+                if (file.name.endsWith('.jil') || file.name.endsWith('.txt')) {
+                    singleFileInput.files = files;
+                    singleFileInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    alert('Veuillez sélectionner un fichier .jil ou .txt');
+                }
+            }
+        });
+    
+        console.log('✅ Nouveau système d\'upload configuré');
     }
 
     setupComparisonEvents() {
@@ -64,11 +129,11 @@ export class EventManager {
         });
 
         if (dropLeft && fileInputLeft) {
-            this.setupSingleDropZone(dropLeft, fileInputLeft, 'left');
+            this.setupComparisonDropZone(dropLeft, fileInputLeft, 'left');
         }
 
         if (dropRight && fileInputRight) {
-            this.setupSingleDropZone(dropRight, fileInputRight, 'right');
+            this.setupComparisonDropZone(dropRight, fileInputRight, 'right');
         }
 
         if (startCompare) {
@@ -79,7 +144,7 @@ export class EventManager {
         }
     }
 
-    setupSingleDropZone(dropZone, fileInput, side) {
+    setupComparisonDropZone(dropZone, fileInput, side) {
         // Clic pour sélectionner un fichier
         dropZone.addEventListener('click', () => {
             console.log(`🖱️ Zone ${side} cliquée`);
@@ -95,85 +160,43 @@ export class EventManager {
         });
 
         // Drag and drop
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('active');
-            console.log(`📦 Drag over zone ${side}`);
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
         });
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('active');
-            console.log(`📦 Drag leave zone ${side}`);
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('drag-over');
+                dropZone.closest('.compare-area').classList.add('drag-over');
+                console.log(`📦 Drag over zone ${side}`);
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('drag-over');
+                dropZone.closest('.compare-area').classList.remove('drag-over');
+                console.log(`📦 Drag leave zone ${side}`);
+            });
         });
 
         dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('active');
-            
-            if (e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
                 console.log(`📦 Fichier déposé dans zone ${side}:`, file.name);
                 
                 if (file.name.endsWith('.jil') || file.name.endsWith('.txt')) {
-                    this.viewer.handleCompareFileSelect(side, file);
+                    fileInput.files = files;
+                    fileInput.dispatchEvent(new Event('change', { bubbles: true }));
                 } else {
                     alert('Veuillez sélectionner un fichier .jil ou .txt');
                 }
             }
         });
-    }
-
-    setupFileEvents() {
-        console.log('🔧 Configuration des événements de fichier');
-        
-        const fileInput = document.getElementById('fileInput');
-        const browseBtn = document.getElementById('browseBtn');
-        const uploadArea = document.getElementById('uploadArea');
-
-        console.log('🔍 Éléments de fichier trouvés:', {
-            fileInput: !!fileInput,
-            browseBtn: !!browseBtn,
-            uploadArea: !!uploadArea
-        });
-
-        if (browseBtn && fileInput) {
-            browseBtn.addEventListener('click', () => {
-                console.log('📁 Bouton Parcourir cliqué');
-                fileInput.click();
-            });
-        }
-
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                console.log('📁 Fichier sélectionné via input');
-                this.viewer.handleFileSelect(e);
-            });
-        }
-
-        // Drag and drop pour le mode simple
-        if (uploadArea) {
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.classList.add('drag-over');
-                console.log('📦 Drag over zone upload principale');
-            });
-
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('drag-over');
-                console.log('📦 Drag leave zone upload principale');
-            });
-
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.classList.remove('drag-over');
-                console.log('📦 Fichier déposé dans zone upload principale');
-                
-                if (e.dataTransfer.files.length > 0) {
-                    fileInput.files = e.dataTransfer.files;
-                    this.viewer.handleFileSelect({ target: { files: e.dataTransfer.files } });
-                }
-            });
-        }
     }
 
     setupFilterEvents() {
@@ -295,11 +318,5 @@ export class EventManager {
                 }
             });
         }
-    }
-
-    setupDragAndDrop() {
-        console.log('🔧 Configuration du drag and drop');
-        // Cette méthode est déjà implémentée dans setupFileEvents et setupComparisonEvents
-        console.log('✅ Drag and drop déjà configuré dans les méthodes spécifiques');
     }
 }
