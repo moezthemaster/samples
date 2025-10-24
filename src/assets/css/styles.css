@@ -1044,16 +1044,33 @@ body {
 .detail-value.compare-new { 
     color: #10b981; 
     font-weight: 600;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .detail-value.compare-modified { 
     color: #f59e0b; 
     font-weight: 600;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .detail-value.compare-deleted { 
     color: #ef4444; 
     font-weight: 600;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.detail-value.compare-identical { 
+    color: #64748b; 
+    font-weight: 600;
+    background: rgba(100, 116, 139, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 .filter-badge {
