@@ -11,6 +11,7 @@ export class EventManager {
         this.setupModalEvents();
         this.setupComparisonEvents();
         this.setupNewUploadSystem(); // Nouveau système unifié
+        this.setupEditionEvents();
         console.log('✅ Tous les événements initialisés');
     }
 
@@ -247,40 +248,79 @@ export class EventManager {
         }
     }
 
-    setupActionEvents() {
-        console.log('🔧 Configuration des événements d\'action');
-        
-        const expandAll = document.getElementById('expandAll');
-        const collapseAll = document.getElementById('collapseAll');
-        const resetView = document.getElementById('resetView');
+setupActionEvents() {
+    console.log('🔧 Configuration des événements d\'action');
+    
+    const expandAll = document.getElementById('expandAll');
+    const collapseAll = document.getElementById('collapseAll');
+    const resetView = document.getElementById('resetView');
+    const resetModified = document.getElementById('resetModified'); // Nouveau
+    const createJob = document.getElementById('createJob');
+    
+    console.log('🔍 Boutons d\'action trouvés:', {
+        expandAll: !!expandAll,
+        collapseAll: !!collapseAll,
+        resetView: !!resetView,
+        resetModified: !!resetModified
+    });
 
-        console.log('🔍 Boutons d\'action trouvés:', {
-            expandAll: !!expandAll,
-            collapseAll: !!collapseAll,
-            resetView: !!resetView
+    if (expandAll) {
+        expandAll.addEventListener('click', () => {
+            console.log('📈 Expand All demandé');
+            this.viewer.expandAll();
         });
-
-        if (expandAll) {
-            expandAll.addEventListener('click', () => {
-                console.log('📈 Expand All demandé');
-                this.viewer.expandAll();
-            });
-        }
-
-        if (collapseAll) {
-            collapseAll.addEventListener('click', () => {
-                console.log('📉 Collapse All demandé');
-                this.viewer.collapseAll();
-            });
-        }
-
-        if (resetView) {
-            resetView.addEventListener('click', () => {
-                console.log('🔄 Reset View demandé');
-                this.viewer.resetView();
-            });
-        }
     }
+
+    if (collapseAll) {
+        collapseAll.addEventListener('click', () => {
+            console.log('📉 Collapse All demandé');
+            this.viewer.collapseAll();
+        });
+    }
+
+    if (resetView) {
+        resetView.addEventListener('click', () => {
+            console.log('🔄 Reset View demandé');
+            this.viewer.resetView();
+        });
+    }
+
+    if (resetModified) {
+        resetModified.addEventListener('click', () => {
+            console.log('🔄 Reset Modified demandé');
+            this.viewer.editionManager.resetModifiedJobs();
+            this.viewer.showNotification('Modifications réinitialisées', 'info');
+        });
+    }
+    if (createJob) {
+        createJob.addEventListener('click', () => {
+            console.log('➕ Création d\'un nouveau job');
+            this.viewer.jobCreator.openCreateModal();
+        });
+    }    
+}
+
+    // Ajouter cette méthode dans EventManager
+setupEditionEvents() {
+    console.log('🔧 Configuration des événements d\'édition');
+    
+    // Déléguer les clics sur les détails
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('detail-value') && 
+            e.target.classList.contains('editable') &&
+            this.viewer.currentMode === 'single') {
+            
+            const attributeName = e.target.getAttribute('data-attribute');
+            const jobName = e.target.getAttribute('data-job');
+            
+            if (attributeName && jobName && this.viewer.boxes.has(jobName)) {
+                const job = this.viewer.boxes.get(jobName);
+                console.log(`✏️ Édition du job ${jobName}, attribut: ${attributeName}`);
+                this.viewer.editionManager.makeFieldEditable(e.target, job, attributeName);
+            }
+        }
+    });
+}
 
     setupModalEvents() {
         console.log('🔧 Configuration des événements de modal');

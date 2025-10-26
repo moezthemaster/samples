@@ -8,6 +8,8 @@ import { ExportManager } from './modules/export-manager.js';
 import { EventManager } from './modules/event-manager.js';
 import { ComparisonManager } from './modules/comparison-manager.js';
 import { ComparisonRenderer } from './modules/comparison-renderer.js';
+import { EditionManager } from './modules/edition-manager.js';
+import { JobCreator } from './modules/job-creator.js';
 
 class AutosysViewer {
     constructor() {
@@ -28,6 +30,8 @@ class AutosysViewer {
             this.eventManager = new EventManager(this);
             this.comparisonManager = new ComparisonManager(this);
             this.comparisonRenderer = new ComparisonRenderer(this);
+            this.editionManager = new EditionManager(this);
+            this.jobCreator = new JobCreator(this);
             this.eventManager.initializeEventListeners();
             
             console.log('Constructeur ok');
@@ -258,139 +262,254 @@ class AutosysViewer {
         detailsContent.classList.remove('hidden');
 
         detailsContent.innerHTML = this.comparisonRenderer.renderComparisonDetails(job);
+        this.setupExportModifiedJIL();
     }
 
-    showNormalJobDetails(job) {
-        const detailsContent = document.getElementById('detailsContent');
-        const detailsPanel = document.getElementById('detailsPanel');
-        
-        detailsPanel.querySelector('.empty-details').classList.add('hidden');
-        detailsContent.classList.remove('hidden');
-
-        detailsContent.innerHTML = this.generateJobDetailsHTML(job);
+showNormalJobDetails(job) {
+    const detailsContent = document.getElementById('detailsContent');
+    const detailsPanel = document.getElementById('detailsPanel');
+    
+    if (!detailsContent || !detailsPanel) return;
+    
+    const emptyDetails = detailsPanel.querySelector('.empty-details');
+    if (emptyDetails) {
+        emptyDetails.classList.add('hidden');
     }
+    
+    detailsContent.classList.remove('hidden');
+    detailsContent.innerHTML = this.generateJobDetailsHTML(job);
+    this.setupExportModifiedJIL();
+}
 
-    generateJobDetailsHTML(job) {
-        const importantAttributes = ['command', 'machine', 'owner', 'condition', 'date_conditions', 'start_times', 'run_calendar', 'exclude_calendar'];
-        
-        let dependenciesHTML = '';
-        if (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) {
-            dependenciesHTML = `
-            <div class="detail-section">
-                <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
-                ${job.attributes.condition ? `
-                <div class="detail-item">
-                    <span class="detail-label">Condition:</span>
-                    <span class="detail-value condition-code">${this.formatCondition(job.attributes.condition)}</span>
-                </div>
-                ` : ''}
-                ${job.dependsOn.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Dépend de:</span>
-                    <span class="detail-value">${job.dependsOn.join(', ')}</span>
-                </div>
-                ` : ''}
-                ${job.requiredBy.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Requis par:</span>
-                    <span class="detail-value">${job.requiredBy.join(', ')}</span>
-                </div>
-                ` : ''}
+generateJobDetailsHTML(job) {
+    const importantAttributes = ['command', 'machine', 'owner', 'condition', 'description'];
+    
+    // Vérifier si le job a été modifié
+    const isModified = job.modified || this.editionManager.modifiedJobs.has(job.name);
+    const resetButton = isModified ? `
+        <button class="btn-reset-modification" id="resetJobModification" data-job="${job.name}">
+            <i class="fas fa-undo"></i> Annuler les modifications
+        </button>
+    ` : '';
+    
+    // Vérifier s'il y a des jobs modifiés globalement
+    const hasGlobalModifications = this.editionManager.getModifiedJobsCount() > 0;
+    const exportSection = hasGlobalModifications ? `
+        <div class="detail-section">
+            <h4><i class="fas fa-download"></i> Export</h4>
+            <div class="export-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn-export" id="exportAllJIL">
+                    <i class="fas fa-file-export"></i> JIL Complet
+                </button>
+                <button class="btn-export" id="exportModifiedJIL">
+                    <i class="fas fa-file-code"></i> Jobs Modifiés
+                </button>
             </div>
-            `;
-        }
-        
-        return `
-            <div class="detail-section">
-                <h4><i class="fas fa-id-card"></i> Informations générales</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Nom:</span>
-                    <span class="detail-value">${job.name}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Type:</span>
-                    <span class="detail-value">${job.type}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Description:</span>
-                    <span class="detail-value">${job.description || 'Non spécifiée'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Parent:</span>
-                    <span class="detail-value">${job.parent || 'Aucun (Box racine)'}</span>
-                </div>
-                ${job.children && job.children.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Enfants:</span>
-                    <span class="detail-value">${job.children.length} job(s)</span>
-                </div>
-                ` : ''}
-            </div>
-
-            ${job.attributes.command ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-terminal"></i> Commande</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Commande:</span>
-                    <span class="detail-value command">${job.attributes.command}</span>
-                </div>
+        </div>
+    ` : '';
+    
+    let dependenciesHTML = '';
+    if (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) {
+        dependenciesHTML = `
+        <div class="detail-section">
+            <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
+            ${job.attributes.condition ? `
+            <div class="detail-item">
+                <span class="detail-label">Condition:</span>
+                <span class="detail-value editable" data-attribute="condition" data-job="${job.name}">${job.attributes.condition}</span>
             </div>
             ` : ''}
-
-            ${job.attributes.machine ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-server"></i> Machine</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Machine:</span>
-                    <span class="detail-value">${job.attributes.machine}</span>
-                </div>
+            ${job.dependsOn.length > 0 ? `
+            <div class="detail-item">
+                <span class="detail-label">Dépend de:</span>
+                <span class="detail-value">${job.dependsOn.join(', ')}</span>
             </div>
             ` : ''}
-
-            ${dependenciesHTML}
-
-            ${job.attributes.run_calendar || job.attributes.start_times || job.attributes.date_conditions ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-calendar-alt"></i> Planification</h4>
-                ${job.attributes.run_calendar ? `
-                <div class="detail-item">
-                    <span class="detail-label">Calendrier:</span>
-                    <span class="detail-value">${job.attributes.run_calendar}</span>
-                </div>
-                ` : ''}
-                ${job.attributes.start_times ? `
-                <div class="detail-item">
-                    <span class="detail-label">Heures de début:</span>
-                    <span class="detail-value">${job.attributes.start_times}</span>
-                </div>
-                ` : ''}
-                ${job.attributes.date_conditions ? `
-                <div class="detail-item">
-                    <span class="detail-label">Conditions de date:</span>
-                    <span class="detail-value">${job.attributes.date_conditions}</span>
-                </div>
-                ` : ''}
+            ${job.requiredBy.length > 0 ? `
+            <div class="detail-item">
+                <span class="detail-label">Requis par:</span>
+                <span class="detail-value">${job.requiredBy.join(', ')}</span>
             </div>
             ` : ''}
-
-            <div class="detail-section">
-                <h4><i class="fas fa-cogs"></i> Autres attributs</h4>
-                ${Object.entries(job.attributes)
-                    .filter(([key]) => !importantAttributes.includes(key))
-                    .map(([key, value]) => `
-                    <div class="detail-item">
-                        <span class="detail-label">${key}:</span>
-                        <span class="detail-value">${value}</span>
-                    </div>
-                    `).join('')}
-                ${Object.entries(job.attributes).filter(([key]) => !importantAttributes.includes(key)).length === 0 ? `
-                    <div class="detail-item">
-                        <span class="detail-label">Aucun autre attribut</span>
-                    </div>
-                ` : ''}
-            </div>
+        </div>
         `;
     }
+    
+    return `
+        ${resetButton}
+        <div class="detail-section">
+            <h4><i class="fas fa-id-card"></i> Informations générales</h4>
+            <div class="detail-item">
+                <span class="detail-label">Nom:</span>
+                <span class="detail-value">${job.name}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">${job.type}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Description:</span>
+                <span class="detail-value editable" data-attribute="description" data-job="${job.name}">
+                    ${job.attributes.description || 'Non spécifiée'}
+                </span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Parent:</span>
+                <span class="detail-value">${job.parent || 'Aucun (Box racine)'}</span>
+            </div>
+            ${job.children && job.children.length > 0 ? `
+            <div class="detail-item">
+                <span class="detail-label">Enfants:</span>
+                <span class="detail-value">${job.children.length} job(s)</span>
+            </div>
+            ` : ''}
+        </div>
+
+        ${job.attributes.command ? `
+        <div class="detail-section">
+            <h4><i class="fas fa-terminal"></i> Commande</h4>
+            <div class="detail-item">
+                <span class="detail-label">Commande:</span>
+                <span class="detail-value editable" data-attribute="command" data-job="${job.name}">${job.attributes.command}</span>
+            </div>
+        </div>
+        ` : ''}
+
+        ${job.attributes.machine ? `
+        <div class="detail-section">
+            <h4><i class="fas fa-server"></i> Machine</h4>
+            <div class="detail-item">
+                <span class="detail-label">Machine:</span>
+                <span class="detail-value editable" data-attribute="machine" data-job="${job.name}">${job.attributes.machine}</span>
+            </div>
+        </div>
+        ` : ''}
+
+        ${job.attributes.owner ? `
+        <div class="detail-section">
+            <h4><i class="fas fa-user"></i> Propriétaire</h4>
+            <div class="detail-item">
+                <span class="detail-label">Owner:</span>
+                <span class="detail-value editable" data-attribute="owner" data-job="${job.name}">${job.attributes.owner}</span>
+            </div>
+        </div>
+        ` : ''}
+
+        ${dependenciesHTML}
+
+        ${exportSection}
+    `;
+}
+
+setupExportModifiedJIL() {
+    const exportAllBtn = document.getElementById('exportAllJIL');
+    const exportModifiedBtn = document.getElementById('exportModifiedJIL');
+    const resetJobBtn = document.getElementById('resetJobModification');
+    
+    if (exportAllBtn) {
+        exportAllBtn.addEventListener('click', () => {
+            const jilContent = this.editionManager.generateModifiedJIL();
+            this.downloadJIL(jilContent, 'jil_complet.jil');
+        });
+    }
+    
+    if (exportModifiedBtn) {
+        exportModifiedBtn.addEventListener('click', () => {
+            const jilContent = this.editionManager.generateModifiedJobsJIL();
+            this.downloadJIL(jilContent, 'jobs_modifies.jil');
+        });
+    }
+    
+    // NOUVEAU : Bouton pour annuler les modifications du job sélectionné
+    if (resetJobBtn) {
+        const jobName = resetJobBtn.getAttribute('data-job');
+        resetJobBtn.addEventListener('click', () => {
+            this.resetJobModification(jobName);
+        });
+    }
+}
+
+// Nouvelle méthode pour réinitialiser un job spécifique
+resetJobModification(jobName) {
+    const job = this.boxes.get(jobName);
+    if (!job) return;
+    
+    if (!confirm(`Voulez-vous vraiment annuler toutes les modifications pour le job "${jobName}" ?`)) {
+        return;
+    }
+    
+    // Réinitialiser ce job spécifique
+    this.editionManager.resetSingleJobModification(jobName);
+    
+    // Rafraîchir l'affichage des détails en rechargeant le job
+    setTimeout(() => {
+        this.selectJob(job);
+    }, 100);
+    
+    this.showNotification(`Modifications annulées pour ${jobName}`, 'success');
+}
+
+// Ajoutez cette méthode pour les notifications
+showNotification(message, type = 'info') {
+    // Créer une notification temporaire
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 600;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    `;
+    
+    if (type === 'success') {
+        notification.style.background = '#27ae60';
+    } else if (type === 'warning') {
+        notification.style.background = '#e67e22';
+    } else {
+        notification.style.background = '#3498db';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Supprimer après 3 secondes
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100px)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Méthode pour rafraîchir immédiatement l'affichage des détails
+// Méthode pour rafraîchir immédiatement l'affichage des détails
+refreshJobDetails() {
+    if (this.selectedJob) {
+        if (this.currentMode === 'compare' && this.comparisonManager.result) {
+            this.showComparisonJobDetails(this.selectedJob);
+        } else {
+            this.showNormalJobDetails(this.selectedJob);
+        }
+    }
+}
+
+downloadJIL(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 
     formatCondition(condition) {
         if (!condition) return '';
