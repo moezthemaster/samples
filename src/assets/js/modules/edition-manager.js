@@ -88,38 +88,93 @@ makeFieldEditable(element, job, attributeName) {
     });
 }
 
+// Méthode pour réinitialiser un job spécifique
 resetSingleJobModification(jobName) {
     const job = this.viewer.boxes.get(jobName);
     if (!job) return;
 
-    // Restaurer les valeurs originales
-    const originalJobValues = this.originalValues.get(jobName);
-    if (originalJobValues) {
-        originalJobValues.forEach((originalValue, attributeName) => {
-            job.attributes[attributeName] = originalValue;
-        });
-    }
+    // Vérifier si c'est un job nouvellement créé (n'existait pas dans l'original)
+    const isNewJob = !this.originalValues.has(jobName) || 
+                     (this.originalValues.get(jobName) && 
+                      this.originalValues.get(jobName).size === 0);
 
-    // Retirer de la liste des modifiés
-    this.modifiedJobs.delete(jobName);
-    
-    // Réinitialiser le flag
-    job.modified = false;
+    if (isNewJob) {
+        // SUPPRIMER COMPLÈTEMENT le job créé
+        this.deleteJob(jobName);
+    } else {
+        // C'est un job existant modifié - restaurer les valeurs originales
+        const originalJobValues = this.originalValues.get(jobName);
+        if (originalJobValues) {
+            originalJobValues.forEach((originalValue, attributeName) => {
+                job.attributes[attributeName] = originalValue;
+            });
+        }
+
+        // Retirer de la liste des modifiés
+        this.modifiedJobs.delete(jobName);
+        job.modified = false;
+        
+        // Réinitialiser l'apparence dans l'arbre
+        this.viewer.treeRenderer.resetJobAppearance(jobName);
+    }
     
     // Nettoyer les sauvegardes
     this.originalValues.delete(jobName);
     
-    // Réinitialiser l'apparence dans l'arbre
-    this.viewer.treeRenderer.resetJobAppearance(jobName);
+    console.log(`🔄 Job ${jobName} ${isNewJob ? 'supprimé' : 'réinitialisé'}`);
     
-    console.log(`🔄 Job ${jobName} réinitialisé`);
-    
-    // RAFRAÎCHIR IMMÉDIATEMENT l'affichage
+    // Rafraîchir l'affichage
     if (this.viewer.selectedJob && this.viewer.selectedJob.name === jobName) {
         setTimeout(() => {
-            this.viewer.refreshJobDetails();
-        }, 10);
+            if (isNewJob) {
+                // Si le job a été supprimé, vider les détails
+                this.viewer.selectedJob = null;
+                const detailsContent = document.getElementById('detailsContent');
+                const detailsPanel = document.getElementById('detailsPanel');
+                if (detailsContent && detailsPanel) {
+                    detailsContent.classList.add('hidden');
+                    detailsPanel.querySelector('.empty-details').classList.remove('hidden');
+                }
+            } else {
+                // Sinon rafraîchir les détails
+                this.viewer.showNormalJobDetails(job);
+            }
+        }, 100);
     }
+}
+
+// Nouvelle méthode pour supprimer un job
+deleteJob(jobName) {
+    const job = this.viewer.boxes.get(jobName);
+    if (!job) return;
+
+    // 1. Retirer des enfants du parent
+    if (job.parent) {
+        const parentJob = this.viewer.boxes.get(job.parent);
+        if (parentJob && parentJob.children) {
+            parentJob.children = parentJob.children.filter(child => child.name !== jobName);
+        }
+    } else {
+        // C'est une box racine
+        this.viewer.rootBoxes = this.viewer.rootBoxes.filter(box => box.name !== jobName);
+    }
+
+    // 2. Retirer de la map des boxes
+    this.viewer.boxes.delete(jobName);
+
+    // 3. Retirer de la liste des modifiés
+    this.modifiedJobs.delete(jobName);
+
+    // 4. Retirer l'apparence visuelle
+    this.viewer.treeRenderer.resetJobAppearance(jobName);
+
+    // 5. Supprimer physiquement du DOM
+    const jobElements = document.querySelectorAll(`[data-job="${jobName}"]`);
+    jobElements.forEach(element => {
+        element.remove();
+    });
+
+    console.log(`🗑️ Job ${jobName} supprimé`);
 }
 
     // Méthode pour réinitialiser tous les jobs modifiés

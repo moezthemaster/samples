@@ -211,6 +211,7 @@ updateJobAppearance(jobName) {
 }
 
 // Méthode pour réinitialiser l'apparence d'un job modifié
+// Méthode pour réinitialiser l'apparence d'un job modifié
 resetJobAppearance(jobName) {
     const jobNodes = document.querySelectorAll(`[data-job="${jobName}"]`);
     

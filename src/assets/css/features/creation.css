@@ -1,3 +1,4 @@
+/* ===== MODAL CREATE JOB ===== */
 #createJobModal {
     position: fixed;
     top: 0;
@@ -15,7 +16,7 @@
     background: white;
     border-radius: 8px;
     width: 90%;
-    max-width: 500px;
+    max-width: 700px; /* large-modal */
     max-height: 80vh;
     overflow-y: auto;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -42,13 +43,16 @@
     font-size: 20px;
     cursor: pointer;
     color: #7f8c8d;
+    padding: 5px;
+    border-radius: 3px;
 }
 
 #createJobModal .close-modal:hover {
-    color: #e74c3c;
+    background: #e74c3c;
+    color: white;
 }
 
-/* Formulaire - styles existants */
+/* ===== FORMULAIRE ===== */
 #createJobForm {
     padding: 20px;
 }
@@ -72,6 +76,7 @@
     border: 1px solid #bdc3c7;
     border-radius: 4px;
     font-size: 14px;
+    transition: border-color 0.2s ease;
 }
 
 .form-group input:focus,
@@ -86,11 +91,66 @@
     resize: vertical;
 }
 
+/* ===== TABS ===== */
+.form-tabs {
+    display: flex;
+    border-bottom: 1px solid #bdc3c7;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    color: #7f8c8d;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-btn:hover {
+    background: #f8f9fa;
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* Masquer les tabs cachés */
+.tab-btn[style*="display: none"] {
+    display: none !important;
+}
+
+/* ===== CHAMPS SPÉCIFIQUES ===== */
+.job-type-fields {
+    background: #ecf0f1;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+select[multiple] {
+    height: 120px;
+}
+
+/* ===== BOUTONS ===== */
 .form-actions {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
     margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
 }
 
 .btn-primary {
@@ -101,6 +161,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
@@ -115,15 +176,96 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .btn-cancel:hover {
     background: #7f8c8d;
 }
 
-.job-type-fields {
-    background: #ecf0f1;
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
+/* ===== BOUTON CRÉER JOB DANS HEADER ===== */
+.btn-create-job {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-create-job:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+}
+
+.btn-create-job i {
+    color: white;
+    font-size: 14px;
+}
+
+/* ===== SECTION ACTIONS ===== */
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.counter {
+    background: #f8f9fa;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    border: 1px solid #e0e0e0;
+}
+
+/* ===== AUTRES STYLES ===== */
+.form-group small {
+    display: block;
+    margin-top: 4px;
+    color: #7f8c8d;
+    font-size: 12px;
+}
+
+/* Indication champs obligatoires */
+.form-group label[for*="Command"]:after,
+.form-group label[for*="Machine"]:after,
+.form-group label[for*="Source"]:after,
+.form-group label[for*="Dest"]:after {
+    content: " *";
+    color: #e74c3c;
+}
+
+/* Style pour les inputs avec datalist */
+input[list] {
+    background-image: linear-gradient(45deg, transparent 50%, #bdc3c7 50%),
+                      linear-gradient(135deg, #bdc3c7 50%, transparent 50%);
+    background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    padding-right: 30px;
+}
+
+input[list]:focus {
+    background-image: linear-gradient(45deg, transparent 50%, #3498db 50%),
+                      linear-gradient(135deg, #3498db 50%, transparent 50%);
+}
+
+/* Indication champs obligatoires */
+.form-group label[for*="createJobName"]:after,
+.form-group label[for*="createJobType"]:after,
+.form-group label[for*="createJobApplication"]:after,
+.form-group label[for*="createJobCommand"]:after,
+.form-group label[for*="createJobMachine"]:after,
+.form-group label[for*="createJobSource"]:after,
+.form-group label[for*="createJobDest"]:after {
+    content: " *";
+    color: #e74c3c;
 }

@@ -89,35 +89,38 @@ class AutosysViewer {
     this.resetView();
     }
 
-    async handleFileSelect(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+async handleFileSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-        console.log('Fichier sélectionné:', file.name);
-        this.showLoading();
+    console.log('Fichier sélectionné:', file.name);
+    this.showLoading();
 
-        try {
-            const content = await this.readFile(file);
-            this.currentFileContent = content;
-            
-            const fileInfoElement = document.getElementById('fileInfoSingle');
-            fileInfoElement.textContent = `${file.name} • ${(file.size / 1024).toFixed(2)} KB`;
-            fileInfoElement.style.color = 'var(--accent-color)';
-            fileInfoElement.style.fontWeight = '600';
-            
-            const parsingResult = this.jilParser.parseJILFile(content);
-            this.boxes = parsingResult.boxes;
-            this.rootBoxes = parsingResult.rootBoxes;
-            
-            this.applyFilters();
-            
-        } catch (error) {
-            console.error('Erreur lors du chargement du fichier:', error);
-            alert('Erreur lors du chargement du fichier: ' + error.message);
-        } finally {
-            this.hideLoading();
-        }
+    try {
+        const content = await this.readFile(file);
+        this.currentFileContent = content;
+        
+        const fileInfoElement = document.getElementById('fileInfoSingle');
+        fileInfoElement.textContent = `${file.name} • ${(file.size / 1024).toFixed(2)} KB`;
+        fileInfoElement.style.color = 'var(--accent-color)';
+        fileInfoElement.style.fontWeight = '600';
+        
+        const parsingResult = this.jilParser.parseJILFile(content);
+        this.boxes = parsingResult.boxes;
+        this.rootBoxes = parsingResult.rootBoxes;
+        
+        // Regénérer les datalists d'autocomplétion
+        this.jobCreator.generateDataLists();
+        
+        this.applyFilters();
+        
+    } catch (error) {
+        console.error('Erreur lors du chargement du fichier:', error);
+        alert('Erreur lors du chargement du fichier: ' + error.message);
+    } finally {
+        this.hideLoading();
     }
+}
 
     async handleCompareFileSelect(side, file) {
         console.log(`Chargement fichier ${side}:`, file.name);
@@ -281,9 +284,6 @@ showNormalJobDetails(job) {
 }
 
 generateJobDetailsHTML(job) {
-    const importantAttributes = ['command', 'machine', 'owner', 'condition', 'description'];
-    
-    // Vérifier si le job a été modifié
     const isModified = job.modified || this.editionManager.modifiedJobs.has(job.name);
     const resetButton = isModified ? `
         <button class="btn-reset-modification" id="resetJobModification" data-job="${job.name}">
@@ -291,7 +291,6 @@ generateJobDetailsHTML(job) {
         </button>
     ` : '';
     
-    // Vérifier s'il y a des jobs modifiés globalement
     const hasGlobalModifications = this.editionManager.getModifiedJobsCount() > 0;
     const exportSection = hasGlobalModifications ? `
         <div class="detail-section">
@@ -307,17 +306,153 @@ generateJobDetailsHTML(job) {
         </div>
     ` : '';
     
-    let dependenciesHTML = '';
-    if (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) {
-        dependenciesHTML = `
+    // Générer toutes les sections de détails
+    return `
+        ${resetButton}
+        
+        <!-- Informations Générales -->
         <div class="detail-section">
-            <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
-            ${job.attributes.condition ? `
+            <h4><i class="fas fa-id-card"></i> Informations générales</h4>
             <div class="detail-item">
-                <span class="detail-label">Condition:</span>
-                <span class="detail-value editable" data-attribute="condition" data-job="${job.name}">${job.attributes.condition}</span>
+                <span class="detail-label">Nom:</span>
+                <span class="detail-value">${job.name}</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Type:</span>
+                <span class="detail-value">${job.type}</span>
+            </div>
+            ${this.generateAttributeHTML(job, 'description', 'Description')}
+            ${this.generateAttributeHTML(job, 'owner', 'Owner')}
+            ${this.generateAttributeHTML(job, 'application', 'Application')}
+            ${this.generateAttributeHTML(job, 'group', 'Groupe')}
+            <div class="detail-item">
+                <span class="detail-label">Parent:</span>
+                <span class="detail-value">${job.parent || 'Aucun (Box racine)'}</span>
+            </div>
+            ${job.children && job.children.length > 0 ? `
+            <div class="detail-item">
+                <span class="detail-label">Enfants:</span>
+                <span class="detail-value">${job.children.length} job(s)</span>
             </div>
             ` : ''}
+        </div>
+
+        <!-- Section spécifique au type -->
+        ${job.type === 'CMD' ? this.generateCMDDetails(job) : ''}
+        ${job.type === 'FT' ? this.generateFTDetails(job) : ''}
+        ${job.type === 'BOX' ? this.generateBOXDetails(job) : ''}
+
+        <!-- Planification -->
+        ${this.generateScheduleDetails(job)}
+
+        <!-- Dépendances et Conditions -->
+        ${this.generateDependenciesDetails(job)}
+
+        <!-- Propriétés Avancées -->
+        ${this.generateAdvancedDetails(job)}
+
+        ${exportSection}
+    `;
+}
+
+// Méthode utilitaire pour générer un attribut éditable
+generateAttributeHTML(job, attributeName, label) {
+    const value = job.attributes[attributeName];
+    if (!value) return '';
+    
+    return `
+        <div class="detail-item">
+            <span class="detail-label">${label}:</span>
+            <span class="detail-value editable" data-attribute="${attributeName}" data-job="${job.name}">
+                ${value}
+            </span>
+        </div>
+    `;
+}
+
+// Détails spécifiques CMD
+generateCMDDetails(job) {
+    return `
+        <div class="detail-section">
+            <h4><i class="fas fa-terminal"></i> Commande</h4>
+            ${this.generateAttributeHTML(job, 'command', 'Commande')}
+            ${this.generateAttributeHTML(job, 'machine', 'Machine')}
+            ${this.generateAttributeHTML(job, 'profile', 'Profile')}
+            ${this.generateAttributeHTML(job, 'permission', 'Permissions')}
+        </div>
+    `;
+}
+
+// Détails spécifiques FT
+generateFTDetails(job) {
+    return `
+        <div class="detail-section">
+            <h4><i class="fas fa-exchange-alt"></i> Transfert de Fichier</h4>
+            ${this.generateAttributeHTML(job, 'source_file', 'Fichier Source')}
+            ${this.generateAttributeHTML(job, 'dest_file', 'Destination')}
+            ${this.generateAttributeHTML(job, 'machine', 'Machine')}
+            ${this.generateAttributeHTML(job, 'permission', 'Permissions')}
+        </div>
+    `;
+}
+
+// Détails spécifiques BOX
+generateBOXDetails(job) {
+    // SEULEMENT POUR LES BOX ET SEULEMENT SI ELLES ONT DES ATTRIBUTS SPÉCIFIQUES
+    if (job.type !== 'BOX') return '';
+    
+    const hasBoxAttributes = job.attributes.box_success || job.attributes.box_failure;
+    if (!hasBoxAttributes) return '';
+    
+    return `
+        <div class="detail-section">
+            <h4><i class="fas fa-cube"></i> Conteneur</h4>
+            ${this.generateAttributeHTML(job, 'box_success', 'Box Success')}
+            ${this.generateAttributeHTML(job, 'box_failure', 'Box Failure')}
+        </div>
+    `;
+}
+
+// Détails de Planification
+generateScheduleDetails(job) {
+    const scheduleAttributes = [
+        'start_times', 'days_of_week', 'run_calendar', 
+        'exclude_calendar', 'date_conditions'
+    ];
+    
+    const hasSchedule = scheduleAttributes.some(attr => job.attributes[attr]);
+    if (!hasSchedule) return '';
+    
+    return `
+        <div class="detail-section">
+            <h4><i class="fas fa-clock"></i> Planification</h4>
+            ${this.generateAttributeHTML(job, 'start_times', 'Heures de début')}
+            ${this.generateAttributeHTML(job, 'days_of_week', 'Jours de la semaine')}
+            ${this.generateAttributeHTML(job, 'run_calendar', 'Calendrier d\'exécution')}
+            ${this.generateAttributeHTML(job, 'exclude_calendar', 'Calendrier d\'exclusion')}
+            ${this.generateAttributeHTML(job, 'date_conditions', 'Conditions de date')}
+        </div>
+    `;
+}
+
+// Détails des Dépendances
+generateDependenciesDetails(job) {
+    const dependencyAttributes = [
+        'condition', 'watch_file', 'watch_file_min_size'
+    ];
+    
+    const hasDependencies = dependencyAttributes.some(attr => job.attributes[attr]) || 
+                           job.dependsOn.length > 0 || 
+                           job.requiredBy.length > 0;
+    
+    if (!hasDependencies) return '';
+    
+    return `
+        <div class="detail-section">
+            <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
+            ${this.generateAttributeHTML(job, 'condition', 'Condition')}
+            ${this.generateAttributeHTML(job, 'watch_file', 'Fichier à surveiller')}
+            ${this.generateAttributeHTML(job, 'watch_file_min_size', 'Taille min fichier')}
             ${job.dependsOn.length > 0 ? `
             <div class="detail-item">
                 <span class="detail-label">Dépend de:</span>
@@ -331,72 +466,31 @@ generateJobDetailsHTML(job) {
             </div>
             ` : ''}
         </div>
-        `;
-    }
+    `;
+}
+
+// Détails Avancés
+generateAdvancedDetails(job) {
+    const advancedAttributes = [
+        'std_out_file', 'std_err_file', 'priority', 'max_exit_success',
+        'alarm_if_fail', 'auto_delete', 'min_run_alarm', 'max_run_alarm'
+    ];
+    
+    const hasAdvanced = advancedAttributes.some(attr => job.attributes[attr]);
+    if (!hasAdvanced) return '';
     
     return `
-        ${resetButton}
         <div class="detail-section">
-            <h4><i class="fas fa-id-card"></i> Informations générales</h4>
-            <div class="detail-item">
-                <span class="detail-label">Nom:</span>
-                <span class="detail-value">${job.name}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Type:</span>
-                <span class="detail-value">${job.type}</span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Description:</span>
-                <span class="detail-value editable" data-attribute="description" data-job="${job.name}">
-                    ${job.attributes.description || 'Non spécifiée'}
-                </span>
-            </div>
-            <div class="detail-item">
-                <span class="detail-label">Parent:</span>
-                <span class="detail-value">${job.parent || 'Aucun (Box racine)'}</span>
-            </div>
-            ${job.children && job.children.length > 0 ? `
-            <div class="detail-item">
-                <span class="detail-label">Enfants:</span>
-                <span class="detail-value">${job.children.length} job(s)</span>
-            </div>
-            ` : ''}
+            <h4><i class="fas fa-cogs"></i> Propriétés Avancées</h4>
+            ${this.generateAttributeHTML(job, 'std_out_file', 'Fichier STDOUT')}
+            ${this.generateAttributeHTML(job, 'std_err_file', 'Fichier STDERR')}
+            ${this.generateAttributeHTML(job, 'priority', 'Priorité')}
+            ${this.generateAttributeHTML(job, 'max_exit_success', 'Code sortie max succès')}
+            ${this.generateAttributeHTML(job, 'alarm_if_fail', 'Alarme si échec')}
+            ${this.generateAttributeHTML(job, 'auto_delete', 'Auto-suppression')}
+            ${this.generateAttributeHTML(job, 'min_run_alarm', 'Alarme min durée')}
+            ${this.generateAttributeHTML(job, 'max_run_alarm', 'Alarme max durée')}
         </div>
-
-        ${job.attributes.command ? `
-        <div class="detail-section">
-            <h4><i class="fas fa-terminal"></i> Commande</h4>
-            <div class="detail-item">
-                <span class="detail-label">Commande:</span>
-                <span class="detail-value editable" data-attribute="command" data-job="${job.name}">${job.attributes.command}</span>
-            </div>
-        </div>
-        ` : ''}
-
-        ${job.attributes.machine ? `
-        <div class="detail-section">
-            <h4><i class="fas fa-server"></i> Machine</h4>
-            <div class="detail-item">
-                <span class="detail-label">Machine:</span>
-                <span class="detail-value editable" data-attribute="machine" data-job="${job.name}">${job.attributes.machine}</span>
-            </div>
-        </div>
-        ` : ''}
-
-        ${job.attributes.owner ? `
-        <div class="detail-section">
-            <h4><i class="fas fa-user"></i> Propriétaire</h4>
-            <div class="detail-item">
-                <span class="detail-label">Owner:</span>
-                <span class="detail-value editable" data-attribute="owner" data-job="${job.name}">${job.attributes.owner}</span>
-            </div>
-        </div>
-        ` : ''}
-
-        ${dependenciesHTML}
-
-        ${exportSection}
     `;
 }
 
@@ -445,19 +539,26 @@ resetJobModification(jobName) {
     const job = this.boxes.get(jobName);
     if (!job) return;
     
-    if (!confirm(`Voulez-vous vraiment annuler toutes les modifications pour le job "${jobName}" ?`)) {
+    const isNewJob = !this.editionManager.originalValues.has(jobName) || 
+                    (this.editionManager.originalValues.get(jobName) && 
+                     this.editionManager.originalValues.get(jobName).size === 0);
+    
+    const message = isNewJob 
+        ? `Voulez-vous vraiment supprimer le job "${jobName}" ?` 
+        : `Voulez-vous vraiment annuler les modifications pour le job "${jobName}" ?`;
+    
+    if (!confirm(message)) {
         return;
     }
     
     // Réinitialiser ce job spécifique
     this.editionManager.resetSingleJobModification(jobName);
     
-    // Rafraîchir l'affichage des détails en rechargeant le job
-    setTimeout(() => {
-        this.selectJob(job);
-    }, 100);
+    const notificationMessage = isNewJob 
+        ? `Job "${jobName}" supprimé` 
+        : `Modifications annulées pour ${jobName}`;
     
-    this.showNotification(`Modifications annulées pour ${jobName}`, 'success');
+    this.showNotification(notificationMessage, 'success');
 }
 
 // Ajoutez cette méthode pour les notifications

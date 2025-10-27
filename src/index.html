@@ -13,9 +13,6 @@
                 <h1><i class="fas fa-project-diagram"></i> JIL Viewer - v1.0.0-beta</h1>
             </div>
             <div class="header-right">
-                <button class="btn-action" id="createJob">
-                    <i class="fas fa-plus"></i> Créer un job
-                </button>
                 <button class="btn-action" id="expandAll">
                     <i class="fas fa-expand"></i> Tout déplier
                 </button>
@@ -130,14 +127,14 @@
                         <div class="section-header">
                             <div class="section-title">
                                 <h3><i class="fas fa-sitemap"></i> Arborescence des Jobs</h3>
-                                <!--div class="file-status" id="fileStatus">
-                                    <span class="file-info" id="fileInfo">Aucun fichier</span>
-                                </div-->
-                                <div class="compare-status hidden" id="compareStatus">
-                                    <!-- Rempli dynamiquement -->
-                                </div>
                             </div>
-                            <span class="counter" id="jobCounter">0 jobs</span>
+                            <div class="section-actions">
+                                <!-- Nouveau bouton Créer un job avec l'icône verte -->
+                                <button class="btn-create-job" id="createJob">
+                                    <i class="fas fa-plus-circle"></i> Créer un job
+                                </button>
+                                <span class="counter" id="jobCounter">0 jobs</span>
+                            </div>
                         </div>
                         <div id="treeContainer" class="tree-container">
                             <div class="empty-state">
