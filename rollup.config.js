@@ -1,8 +1,8 @@
 import postcss from "rollup-plugin-postcss";
 import postcssUrl from "postcss-url";
+import postcssImport from "postcss-import";
 import terser from "@rollup/plugin-terser";
 import fs from "fs";
-
 
 const libs = [
   fs.readFileSync("src/lib/html2canvas.min.js", "utf-8"),
@@ -32,11 +32,13 @@ export default {
       }
     },
     postcss({
-      inject: true,
+      inject: false,
+      extract: 'styles.css',
       minimize: true,
       plugins: [
+        postcssImport(),
         postcssUrl({
-          url: "inline",
+          url: "inline", 
           maxSize: 0
         })
       ]
@@ -46,36 +48,44 @@ export default {
       name: "html-inliner",
       writeBundle() {
         const tempJsPath = "dist/bundle-temp.js";
+        const cssPath = "dist/styles.css";
         const templatePath = "src/index.html";
         const outputPath = "dist/jil-viewer.html";
         
-        if (!fs.existsSync(tempJsPath)) {
-          throw new Error(`Fichier JS temporaire manquant: ${tempJsPath}`);
-        }
-        if (!fs.existsSync(templatePath)) {
-          throw new Error(`Template HTML manquant: ${templatePath}`);
+        if (!fs.existsSync(tempJsPath) || !fs.existsSync(cssPath)) {
+          throw new Error(`Fichiers temporaires manquants`);
         }
         
         const jsCode = fs.readFileSync(tempJsPath, "utf-8");
+        const cssCode = fs.readFileSync(cssPath, "utf-8");
         const template = fs.readFileSync(templatePath, "utf-8");
         
-        let finalHtml;
-        if (template.includes('</body>')) {
-          finalHtml = template.replace('</body>', `<script>${jsCode}</script>\n</body>`);
+        let finalHtml = template;
+        
+        if (finalHtml.includes('</head>')) {
+          finalHtml = finalHtml.replace('</head>', `<style>${cssCode}</style>\n</head>`);
+        } else if (finalHtml.includes('<body>')) {
+          finalHtml = finalHtml.replace('<body>', `<style>${cssCode}</style>\n<body>`);
         } else {
-          finalHtml = template + `\n<script>${jsCode}</script>`;
+          finalHtml = `<style>${cssCode}</style>\n${finalHtml}`;
+        }
+        
+        if (finalHtml.includes('</body>')) {
+          finalHtml = finalHtml.replace('</body>', `<script>${jsCode}</script>\n</body>`);
+        } else {
+          finalHtml = finalHtml + `\n<script>${jsCode}</script>`;
         }
         
         const minifiedHtml = minifyHtml(finalHtml);
-        
         fs.writeFileSync(outputPath, minifiedHtml);
-        console.log(`${outputPath} créé avec JS inline (minifié)`);
+        console.log(`${outputPath} créé avec CSS dans <head> et JS inline`);
         
+        // nettoyage
         try {
           fs.unlinkSync(tempJsPath);
-          console.log(`${tempJsPath} supprimé`);
+          fs.unlinkSync(cssPath);
         } catch (e) {
-          console.warn(`Impossible de supprimer ${tempJsPath}:`, e.message);
+          console.warn('Impossible de supprimer les temporaires:', e.message);
         }
       }
     }

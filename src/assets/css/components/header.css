@@ -1,0 +1,75 @@
+.main-header {
+    height: var(--header-height);
+    background: white;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow);
+    width: 100%;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.header-left h1 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.header-right {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
+}
+
+.btn-action {
+    background: white;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+}
+
+.btn-action:hover {
+    background: var(--secondary-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}

@@ -1,5 +1,4 @@
-import '../css/styles.css';
-//import '../fonts/fontawesome.css';
+import '../css/main.css';
 import '../fonts/all.min.css';
 
 import { JILParser } from './modules/jil-parser.js';
@@ -409,18 +408,30 @@ setupExportModifiedJIL() {
     if (exportAllBtn) {
         exportAllBtn.addEventListener('click', () => {
             const jilContent = this.editionManager.generateModifiedJIL();
-            this.downloadJIL(jilContent, 'jil_complet.jil');
+            if (jilContent) {
+                const fileName = `jil_complet_${new Date().toISOString().split('T')[0]}.jil`;
+                this.downloadJIL(jilContent, fileName);
+            }
         });
     }
     
     if (exportModifiedBtn) {
         exportModifiedBtn.addEventListener('click', () => {
+            const modifiedCount = this.editionManager.getModifiedJobsCount();
+            if (modifiedCount === 0) {
+                this.showNotification('Aucun job modifié à exporter', 'warning');
+                return;
+            }
+            
             const jilContent = this.editionManager.generateModifiedJobsJIL();
-            this.downloadJIL(jilContent, 'jobs_modifies.jil');
+            if (jilContent) {
+                const fileName = `jobs_modifies_${new Date().toISOString().split('T')[0]}.jil`;
+                this.downloadJIL(jilContent, fileName);
+            }
         });
     }
     
-    // NOUVEAU : Bouton pour annuler les modifications du job sélectionné
+    // Bouton pour annuler les modifications du job sélectionné
     if (resetJobBtn) {
         const jobName = resetJobBtn.getAttribute('data-job');
         resetJobBtn.addEventListener('click', () => {
@@ -502,13 +513,27 @@ refreshJobDetails() {
 }
 
 downloadJIL(content, filename) {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (!content) {
+        this.showNotification('Aucun contenu à exporter', 'warning');
+        return;
+    }
+    
+    try {
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification(`Fichier ${filename} exporté avec succès`, 'success');
+    } catch (error) {
+        console.error('Erreur lors du téléchargement:', error);
+        this.showNotification('Erreur lors de l\'export', 'error');
+    }
 }
 
     formatCondition(condition) {

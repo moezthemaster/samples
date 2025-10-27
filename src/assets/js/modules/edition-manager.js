@@ -164,4 +164,75 @@ markJobAsModifiedInTree(jobName) {
     getModifiedJobsCount() {
         return this.modifiedJobs.size;
     }
+generateModifiedJIL() {
+    let jilContent = '';
+    let jobCount = 0;
+    
+    this.viewer.boxes.forEach((job, jobName) => {
+        jilContent += this.generateJobJIL(job);
+        jobCount++;
+    });
+    
+    console.log(`📁 Export JIL complet: ${jobCount} jobs`);
+    return jilContent;
+}
+
+generateModifiedJobsJIL() {
+    if (this.modifiedJobs.size === 0) {
+        alert('Aucun job modifié à exporter. Modifiez d\'abord certains attributs dans les détails des jobs.');
+        return '';
+    }
+    
+    let jilContent = '';
+    let modifiedCount = 0;
+    
+    this.modifiedJobs.forEach(jobName => {
+        const job = this.viewer.boxes.get(jobName);
+        if (job) {
+            jilContent += this.generateJobJIL(job);
+            modifiedCount++;
+        }
+    });
+    
+    console.log(`🔄 Export jobs modifiés: ${modifiedCount} jobs`);
+    return jilContent;
+}
+
+generateJobJIL(job) {
+    let jil = '';
+    
+    // Commentaire avec le nom du job
+    jil += `/* ${job.name} - ${job.type} */\n`;
+    
+    // Ligne insert_job
+    jil += `insert_job: ${job.name}\tjob_type: ${job.type}\n`;
+    
+    // Tous les attributs dans l'ordre standard
+    const attributeOrder = [
+        'description', 'box_name', 'command', 'machine', 'owner', 
+        'permission', 'conditions', 'std_out_file', 'std_err_file',
+        'min_run_alarm', 'max_run_alarm', 'alarm_if_fail', 'auto_delete',
+        'date_conditions', 'start_times', 'start_mins', 'days_of_week',
+        'run_calendar', 'exclude_calendar', 'timezone', 'application',
+        'group', 'priority'
+    ];
+    
+    // Ajouter les attributs dans l'ordre
+    attributeOrder.forEach(attr => {
+        if (job.attributes[attr] && job.attributes[attr] !== '') {
+            jil += `${attr}: ${job.attributes[attr]}\n`;
+        }
+    });
+    
+    // Ajouter les autres attributs non standard
+    Object.entries(job.attributes).forEach(([key, value]) => {
+        if (!attributeOrder.includes(key) && value && value !== '') {
+            jil += `${key}: ${value}\n`;
+        }
+    });
+    
+    jil += '\n'; // Séparation entre les jobs
+    
+    return jil;
+}
 }

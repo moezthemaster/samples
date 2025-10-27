@@ -1,0 +1,83 @@
+.edit-input {
+    width: 100%;
+    padding: 4px 8px;
+    border: 2px solid var(--accent-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: inherit;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.detail-value.editable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+.detail-value.editable:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+    box-shadow: 0 0 0 1px rgba(52, 152, 219, 0.3);
+}
+
+.tree-node.modified > .tree-node-header {
+    background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
+    border: 1px solid #ffd8a8;
+    box-shadow: 0 2px 4px rgba(230, 126, 34, 0.2);
+}
+
+.tree-node.modified > .tree-node-header .job-name {
+    color: #e67e22 !important;
+    font-weight: 600;
+}
+
+.tree-node.modified {
+    border-left: 3px solid #e67e22 !important;
+}
+
+.modified-indicator {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #e67e22;
+}
+
+.tree-node.modified .children .tree-node {
+    border-left-color: #bdc3c7 !important;
+}
+
+.tree-node.modified .children .tree-node-header {
+    background: var(--card-bg) !important;
+    border: 1px solid #e0e0e0 !important;
+    box-shadow: none !important;
+}
+
+.tree-node.modified .children .job-name {
+    color: inherit !important;
+    font-weight: normal !important;
+}
+
+.btn-reset-modification {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    width: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.3);
+}
+
+.btn-reset-modification:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.4);
+}
+
+.btn-reset-modification i {
+    margin-right: 8px;
+}

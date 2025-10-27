@@ -1,0 +1,134 @@
+.tree-node {
+    position: relative;
+    padding: 0.3rem 0 0.3rem 1rem;
+    margin-left: 0.6rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.tree-node:hover {
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.tree-node::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0.4rem;
+    border-left: 1px solid #d1d5db;
+    height: 100%;
+}
+
+.tree-node::after {
+    content: "";
+    position: absolute;
+    top: 0.6rem;
+    left: 0.4rem;
+    width: 0.6rem;
+    border-top: 1px solid #d1d5db;
+}
+
+.tree-node:last-child::before {
+    height: 0.6rem;
+}
+
+.tree-node-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.tree-node .children {
+    margin-left: 1rem;
+    border-left: 1px dashed #e5e7eb;
+    padding-left: 0.5rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.tree-node.collapsed > .children {
+    max-height: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;;
+}
+
+.tree-node.expanded > .children {
+    max-height: 5000px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+}
+
+.tree-node-header i {
+    font-size: 0.75rem;
+    width: 14px;
+}
+
+.job-type-BOX i { color: #059669; }
+.job-type-CMD i { color: #2563eb; }
+.job-type-FT i  { color: #f59e0b; }
+
+.tree-node.selected {
+    background: #dbeafe;
+    border-radius: 4px;
+}
+
+.tree-node.selected::before {
+    border-color: #2563eb;
+}
+
+.execution-order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: bold;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.dependency-info {
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.filter-badge {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 2px solid transparent;
+}
+
+.filter-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.filter-badge.active {
+    border: 2px solid white;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.filter-badge.all {
+    background: var(--primary-color);
+    color: white;
+}
+
+.fa-layer-group::before { content: "\f5fd"; }
