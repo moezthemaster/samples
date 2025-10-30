@@ -1,6 +1,40 @@
 export class TreeRenderer {
     constructor(viewer) {
         this.viewer = viewer;
+        this.setupContextMenu();
+    }
+
+    setupContextMenu() {
+        if (!document.getElementById('treeContextMenu')) {
+            this.contextMenu = document.createElement('div');
+            this.contextMenu.id = 'treeContextMenu';
+            this.contextMenu.className = 'context-menu hidden';
+            this.contextMenu.innerHTML = `
+                <div class="context-menu-item" data-action="expand-recursive">
+                    <i class="fas fa-expand-arrows-alt"></i>
+                    Déplier
+                </div>
+                <div class="context-menu-item" data-action="collapse-recursive">
+                    <i class="fas fa-compress-arrows-alt"></i>
+                    Replier
+                </div>
+            `;
+            document.body.appendChild(this.contextMenu);
+
+            document.addEventListener('click', () => {
+                this.hideContextMenu();
+            });
+
+            this.contextMenu.addEventListener('click', (e) => {
+                const menuItem = e.target.closest('.context-menu-item');
+                if (menuItem && !menuItem.classList.contains('disabled')) {
+                    const action = menuItem.dataset.action;
+                    this.handleContextMenuAction(action);
+                }
+            });
+        } else {
+            this.contextMenu = document.getElementById('treeContextMenu');
+        }
     }
 
     renderTree(rootBoxes = this.viewer.rootBoxes) {
@@ -65,6 +99,13 @@ export class TreeRenderer {
             node.classList.toggle('expanded');
             node.classList.toggle('collapsed');
             this.viewer.selectJob(box);
+            this.hideContextMenu();
+        });
+
+        header.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showContextMenu(e, node, box);
         });
 
         node.appendChild(header);
@@ -83,6 +124,83 @@ export class TreeRenderer {
         }
 
         return node;
+    }
+
+    showContextMenu(e, node, box) {
+        this.currentNode = node;
+        this.currentJob = box;
+        
+        this.contextMenu.style.left = e.pageX + 'px';
+        this.contextMenu.style.top = e.pageY + 'px';
+        this.contextMenu.classList.remove('hidden');
+        
+        this.updateContextMenuOptions(box);
+    }
+
+    hideContextMenu() {
+        if (this.contextMenu) {
+            this.contextMenu.classList.add('hidden');
+        }
+        this.currentNode = null;
+        this.currentJob = null;
+    }
+
+    updateContextMenuOptions(box) {
+        const expandItem = this.contextMenu.querySelector('[data-action="expand-recursive"]');
+        const collapseItem = this.contextMenu.querySelector('[data-action="collapse-recursive"]');
+        
+        const hasChildren = box.children && box.children.length > 0;
+        
+        if (hasChildren) {
+            expandItem.classList.remove('disabled');
+            collapseItem.classList.remove('disabled');
+        } else {
+            expandItem.classList.add('disabled');
+            collapseItem.classList.add('disabled');
+        }
+    }
+
+    handleContextMenuAction(action) {
+        if (!this.currentNode || !this.currentJob) return;
+        
+        switch (action) {
+            case 'expand-recursive':
+                this.expandRecursively(this.currentNode, this.currentJob);
+                break;
+            case 'collapse-recursive':
+                this.collapseRecursively(this.currentNode, this.currentJob);
+                break;
+        }
+        
+        this.hideContextMenu();
+    }
+
+    expandRecursively(node, box) {
+        node.classList.add('expanded');
+        node.classList.remove('collapsed');
+
+        if (box.children && box.children.length > 0) {
+            box.children.forEach(child => {
+                const childNode = this.findTreeNodeByName(child.name);
+                if (childNode) {
+                    this.expandRecursively(childNode, child);
+                }
+            });
+        }
+    }
+
+    collapseRecursively(node, box) {
+        node.classList.add('collapsed');
+        node.classList.remove('expanded');
+
+        if (box.children && box.children.length > 0) {
+            box.children.forEach(child => {
+                const childNode = this.findTreeNodeByName(child.name);
+                if (childNode) {
+                    this.collapseRecursively(childNode, child);
+                }
+            });
+        }
     }
 
     getIconForType(type) {
