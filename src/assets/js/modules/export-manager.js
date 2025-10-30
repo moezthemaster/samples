@@ -17,19 +17,12 @@ export class ExportManager {
         try {
             this.viewer.showLoading();
             
-            // Sauvegarder l'état actuel et la position de défilement
             const originalStates = this.saveTreeState();
             const originalScroll = window.scrollY;
-            
-            // Déplier tout
+
             this.expandAllForExport();
-            
-            // Attendre que le DOM soit mis à jour
             await new Promise(resolve => setTimeout(resolve, 500));
-            
             const treeContainer = document.getElementById('treeContainer');
-            
-            // Créer un conteneur temporaire pour la capture complète
             const exportContainer = document.createElement('div');
             exportContainer.style.cssText = `
                 position: absolute;
@@ -40,7 +33,6 @@ export class ExportManager {
                 padding: 20px;
             `;
             
-            // Cloner l'arbre complet
             const clonedTree = treeContainer.cloneNode(true);
             clonedTree.style.cssText = `
                 width: 100%;
@@ -48,7 +40,6 @@ export class ExportManager {
                 overflow: visible;
             `;
             
-            // S'assurer que tout est visible dans le clone
             const clonedNodes = clonedTree.querySelectorAll('.tree-node');
             clonedNodes.forEach(node => {
                 node.classList.add('expanded');
@@ -68,7 +59,6 @@ export class ExportManager {
             exportContainer.appendChild(clonedTree);
             document.body.appendChild(exportContainer);
             
-            // Capturer le conteneur complet
             const canvas = await window.html2canvas(exportContainer, {
                 backgroundColor: '#ffffff',
                 scale: 1.5,
@@ -83,14 +73,11 @@ export class ExportManager {
                 windowHeight: exportContainer.scrollHeight
             });
             
-            // Nettoyer
             document.body.removeChild(exportContainer);
             
-            // Restaurer l'état original
             this.restoreTreeState(originalStates);
             window.scrollTo(0, originalScroll);
             
-            // Télécharger
             const link = document.createElement('a');
             link.download = `autosys-${new Date().toISOString().split('T')[0]}.png`;
             link.href = canvas.toDataURL('image/png', 1.0);
@@ -118,13 +105,10 @@ async exportToPDF() {
     try {
         this.viewer.showLoading();
         
-        // Sauvegarder l'état actuel
         const originalStates = this.saveTreeState();
-        
-        // Déplier tout
         this.expandAllForExport();
         
-        // Attendre que le DOM soit mis à jour
+        // attente maj dom
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         const treeContainer = document.getElementById('treeContainer');
@@ -135,11 +119,10 @@ async exportToPDF() {
         const pageHeight = pdf.internal.pageSize.getHeight();
         const margin = 15;
         
-        // Calculer la hauteur totale nécessaire
         const totalHeight = treeContainer.scrollHeight;
         const scale = 1.5;
         
-        // Capturer l'image complète en une seule fois
+        // capture d'imge
         const canvas = await window.html2canvas(treeContainer, {
             backgroundColor: '#ffffff',
             scale: scale,
@@ -186,19 +169,15 @@ async exportToPDF() {
 
         const imgData = canvas.toDataURL('image/png', 0.9);
         
-        // Calculer les dimensions pour le PDF
         const imgWidth = canvas.width / scale;
         const imgHeight = canvas.height / scale;
-        
-        // Adapter à la largeur de la page
         const ratio = (pageWidth - 2 * margin) / imgWidth;
         const finalWidth = imgWidth * ratio;
         const finalHeight = imgHeight * ratio;
         
-        // Calculer le nombre de pages nécessaires
+        // calcl le nombre de pages necessaire
         const pagesNeeded = Math.ceil(finalHeight / (pageHeight - 20));
         
-        // Date d'extraction formatée
         const extractionDate = new Date().toLocaleDateString('fr-FR');
         
         for (let i = 0; i < pagesNeeded; i++) {
@@ -208,7 +187,6 @@ async exportToPDF() {
             
             const yPos = -i * (pageHeight - 20);
             
-            // Ajouter l'image avec découpage pour la page actuelle
             pdf.addImage({
                 imageData: imgData,
                 format: 'PNG',
@@ -218,7 +196,6 @@ async exportToPDF() {
                 height: finalHeight
             });
             
-            // Ajouter le pied de page discret en bas à droite
             pdf.setFontSize(8);
             pdf.setTextColor(120, 120, 120);
             
@@ -229,10 +206,7 @@ async exportToPDF() {
             pdf.text(footerText, textX, pageHeight - 5);
         }
         
-        // Restaurer l'état original
         this.restoreTreeState(originalStates);
-        
-        // Sauvegarder
         pdf.save(`autosys-${new Date().toISOString().split('T')[0]}.pdf`);
         
     } catch (error) {
@@ -258,15 +232,12 @@ saveTreeState() {
 }
 
 expandAllForExport() {
-    // Déplier tous les nodes
     document.querySelectorAll('.tree-node').forEach(node => {
         if (node.querySelector('.children')) {
             node.classList.add('expanded');
             node.classList.remove('collapsed');
         }
     });
-
-    // Afficher tous les enfants
     document.querySelectorAll('.children').forEach(container => {
         container.style.cssText = `
             display: block !important;
@@ -277,7 +248,6 @@ expandAllForExport() {
         `;
     });
     
-    // Forcer un reflow
     document.body.offsetHeight;
 }
 
@@ -288,10 +258,8 @@ exportToHTML() {
     }
     
     try {
-        // Extraire le nom de l'application depuis le JIL
         const applicationName = this.extractApplicationName();
         const displayAppName = applicationName ? `APPLICATION: ${applicationName}` : 'APPLICATION: Non spécifiée';
-        
         let htmlContent = `
 <!DOCTYPE html>
 <html lang="fr">
@@ -465,16 +433,14 @@ exportToHTML() {
     }
 }
 
-// Méthode pour extraire le nom de l'application depuis le JIL
 extractApplicationName() {
-    // Chercher dans tous les jobs l'attribut "application"
     for (const [jobName, job] of this.viewer.boxes) {
         if (job.attributes && job.attributes.application) {
             return job.attributes.application;
         }
     }
     
-    // Si pas trouvé, chercher l'attribut "APPLICATION" (en majuscules)
+    // sinon cherch "APPLICATION" (en majuscules)
     for (const [jobName, job] of this.viewer.boxes) {
         if (job.attributes && job.attributes.APPLICATION) {
             return job.attributes.APPLICATION;
@@ -484,7 +450,6 @@ extractApplicationName() {
     return null;
 }
 
-// Méthode utilitaire pour échapper le HTML
 escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -502,6 +467,5 @@ restoreTreeState(states) {
         }
     });
 }
-
 
 }
