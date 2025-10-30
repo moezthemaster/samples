@@ -1,0 +1,324 @@
+.upload-mode-toggle {
+    display: flex;
+    background: var(--secondary-color);
+    border-radius: 6px;
+    padding: 2px;
+    margin-bottom: 12px;
+    gap: 2px;
+    border: 1px solid var(--border-color);
+    height: 32px;
+}
+
+.btn-mode {
+    flex: 1;
+    padding: 6px 8px;
+    border: none;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+    min-height: 0;
+}
+
+.btn-mode.active {
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: var(--primary-color);
+    font-weight: 600;
+    transform: none;
+}
+
+.btn-mode:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--text-primary);
+    transform: none;
+}
+
+.btn-mode i {
+    font-size: 0.7rem;
+    width: 12px;
+}
+
+.compare-mode {
+    margin-top: 8px;
+}
+
+.compare-upload-areas {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+}
+
+.compare-area {
+    text-align: center;
+    padding: 16px;
+    background: var(--secondary-color);
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.compare-area.active {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.compare-area i {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+
+.compare-area h4 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.compare-drop-zone {
+    padding: 16px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-light);
+    background: white;
+}
+
+.compare-drop-zone:hover {
+    border-color: var(--primary-color);
+    background: var(--secondary-color);
+    color: var(--text-primary);
+}
+
+.file-info-compare {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: white;
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+}
+
+.compare-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.compare-status {
+    display: flex;
+    gap: 6px;
+    margin-left: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.compare-badge {
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-shrink: 0;
+}
+
+.compare-badge.new {
+    background: #10b981;
+    color: white;
+}
+
+.compare-badge.modified {
+    background: #f59e0b;
+    color: white;
+}
+
+.compare-badge.deleted {
+    background: #ef4444;
+    color: white;
+}
+
+.tree-node .compare-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.compare-new { background: #10b981; }
+.compare-modified { background: #f59e0b; }
+.compare-deleted { background: #ef4444; }
+.compare-identical { background: #64748b; }
+
+.fa-plus-circle { color: #10b981; }
+.fa-minus-circle { color: #ef4444; }
+.fa-pencil-alt { color: #f59e0b; }
+.fa-check-circle { color: #64748b; }
+.fa-code-compare { color: var(--primary-color); }
+.fa-list { color: var(--text-secondary); }
+
+.compare-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.compare-detail-section {
+    background: var(--secondary-color);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color);
+    font-size: 0.85rem;
+}
+
+.compare-detail-section.file-a {
+    border-left-color: #10b981;
+}
+
+.compare-detail-section.file-b {
+    border-left-color: #f59e0b;
+}
+
+.compare-file-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.diff-highlight {
+    background: #fef3c7;
+    border-left-color: #f59e0b !important;
+}
+
+.compare-mode-active .tree-section {
+    flex: 1;
+    min-width: 0;
+}
+
+.compare-mode-active .details-section {
+    flex: 0 0 350px;
+}
+
+.compare-mode .vs-separator {
+    display: none;
+}
+
+.single-mode .file-upload-area {
+    display: none;
+}
+
+.single-mode .compare-upload-areas {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+}
+
+.single-mode .compare-area {
+    text-align: center;
+    padding: 16px;
+    background: var(--secondary-color);
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--border-color);
+    transition: border-color 0.3s ease;
+}
+
+.single-mode .compare-area.drag-over {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.single-mode .compare-drop-zone {
+    padding: 16px;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: var(--text-light);
+    background: white;
+    margin: 8px 0;
+}
+
+.single-mode .compare-drop-zone:hover {
+    border-color: var(--primary-color);
+    background: var(--secondary-color);
+    color: var(--text-primary);
+}
+
+.single-mode .compare-drop-zone.drag-over {
+    border-color: var(--accent-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.single-mode .compare-area i.fa-file-code {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+
+.single-mode .compare-area h4 {
+    font-size: 1.1rem;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.single-mode .compare-drop-zone i.fa-cloud-upload-alt {
+    font-size: 1.8rem;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+}
+
+.single-mode .compare-drop-zone p {
+    margin: 8px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.single-mode .file-info-compare {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.single-mode .file-info-compare i {
+    color: var(--primary-color);
+}
+
+.single-mode .browse-btn {
+    display: none;
+}
