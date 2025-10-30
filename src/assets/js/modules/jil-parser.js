@@ -8,7 +8,7 @@ export class JILParser {
     }
 
     parseJILFile(content) {
-        console.log('=== DÉBUT PARSING JIL AVEC ORDRE PAR DÉPENDANCES ===');
+        console.log('DÉBUT PARSING JIL AVEC ORDRE PAR DÉPENDANCES');
         this.boxes.clear();
         this.rootBoxes = [];
         this.jobOrder = [];
@@ -106,7 +106,7 @@ export class JILParser {
             jobCount++;
         }
 
-        console.log(`✅ Parsing terminé: ${jobCount} jobs`);
+        console.log(`Parsing terminé: ${jobCount} jobs`);
         this.buildDependencyGraph();
         this.buildHierarchyWithExecutionOrder();
         
@@ -160,7 +160,7 @@ export class JILParser {
         }
     }
 extractDependencies(job, condition) {
-    console.log(`🔍 Analyse des dépendances pour ${job.name}: ${condition}`);
+    console.log(`Analyse des dépendances pour ${job.name}: ${condition}`);
     
     if (!condition) return;
 
@@ -180,14 +180,14 @@ extractDependencies(job, condition) {
             
             if (dependentJob && !job.dependsOn.includes(dependentJob)) {
                 job.dependsOn.push(dependentJob);
-                console.log(`   📌 ${job.name} → ${dependentJob} (condition: ${match[0]})`);
+                console.log(`    ${job.name} → ${dependentJob} (condition: ${match[0]})`);
             }
         }
     });
 }
 
 calculateExecutionOrder() {
-    console.log('🔀 Calcul de l\'ordre d\'exécution par analyse des conditions');
+    console.log('Calcul de l\'ordre d\'exécution par analyse des conditions');
     
     const visited = new Set();
     const order = [];
@@ -200,7 +200,7 @@ calculateExecutionOrder() {
 
     const visit = (jobName, path = new Set()) => {
         if (path.has(jobName)) {
-            console.log(`⚠️ Cycle détecté: ${Array.from(path).join(' → ')} → ${jobName}`);
+            console.log(`Cycle détecté: ${Array.from(path).join(' → ')} → ${jobName}`);
             return;
         }
         
@@ -235,7 +235,7 @@ calculateExecutionOrder() {
     }
 
     this.executionOrder = order;
-    console.log('📋 Ordre basé sur les conditions:', this.executionOrder);
+    console.log('Ordre basé sur les conditions:', this.executionOrder);
 }
 
     finalizeJob(job) {
@@ -261,7 +261,7 @@ calculateExecutionOrder() {
     }
 
     calculateExecutionOrder() {
-        console.log('🔀 Calcul de l\'ordre d\'exécution par tri topologique');
+        console.log('Calcul de l\'ordre d\'exécution par tri topologique');
         
         const visited = new Set();
         const temp = new Set();
@@ -269,7 +269,7 @@ calculateExecutionOrder() {
 
         const visit = (jobName) => {
             if (temp.has(jobName)) {
-                console.log(`⚠️  Cycle détecté avec ${jobName}`);
+                console.log(`  Cycle détecté avec ${jobName}`);
                 return;
             }
             
@@ -302,11 +302,11 @@ calculateExecutionOrder() {
         }
 
         this.executionOrder = order;
-        console.log('📋 Ordre d\'exécution calculé:', this.executionOrder);
+        console.log('Ordre d\'exécution calculé:', this.executionOrder);
     }
 
     buildHierarchyWithExecutionOrder() {
-        console.log('=== CONSTRUCTION HIÉRARCHIE AVEC ORDRE D\'EXÉCUTION ===');
+        console.log('CONSTRUCTION HIÉRARCHIE AVEC ORDRE D\'EXÉCUTION');
         
         for (const job of this.boxes.values()) {
             job.children = [];
@@ -329,7 +329,7 @@ calculateExecutionOrder() {
         this.calculateDepthLevels();
         this.sortHierarchyByExecutionOrder();
 
-        console.log(`✅ Hiérarchie construite: ${this.rootBoxes.length} racines`);
+        console.log(`Hiérarchie construite: ${this.rootBoxes.length} racines`);
     }
 
     calculateDepthLevels() {
@@ -344,7 +344,7 @@ calculateExecutionOrder() {
     }
 
     sortHierarchyByExecutionOrder() {
-        console.log('🔀 Tri hiérarchique par ordre d\'exécution');
+        console.log('Tri hiérarchique par ordre d\'exécution');
         
         const executionIndex = new Map();
         this.executionOrder.forEach((jobName, index) => {
