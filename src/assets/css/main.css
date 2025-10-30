@@ -1,0 +1,17 @@
+/* base et vars */
+@import './base/variables.css';
+@import './base/reset.css';
+@import './base/modal.css';
+
+/* composnts */
+@import './components/header.css';
+@import './components/sidebar.css';
+@import './components/tree-view.css';
+@import './components/contextual.css';
+
+/* fonctionnalites */
+@import './features/visualization.css';
+@import './features/comparison.css';
+
+/* layouts */
+@import './layouts/responsive.css';
