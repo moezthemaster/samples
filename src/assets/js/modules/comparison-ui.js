@@ -5,7 +5,7 @@ export class ComparisonUI {
     }
 
     initializeUI() {
-        console.log('🎨 Initialisation de l\'UI de comparaison...');
+        console.log('Initialisation de l\'UI de comparaison...');
         this.setupModeToggle();
         this.setupDropZones();
     }
@@ -15,21 +15,21 @@ export class ComparisonUI {
         const modeCompare = document.getElementById('modeCompare');
         
         if (!modeSingle || !modeCompare) {
-            console.error('❌ Boutons de mode non trouvés');
+            console.error('Boutons de mode non trouvés');
             return;
         }
 
         modeSingle.addEventListener('click', () => {
-            console.log('📁 Mode simple cliqué');
+            console.log('Mode simple cliqué');
             this.viewer.toggleMode('single');
         });
 
         modeCompare.addEventListener('click', () => {
-            console.log('🔍 Mode comparaison cliqué');
+            console.log('Mode comparaison cliqué');
             this.viewer.toggleMode('compare');
         });
 
-        console.log('✅ Toggle de mode configuré');
+        console.log('Toggle de mode configuré');
     }
 
     setupDropZones() {
@@ -93,7 +93,7 @@ export class ComparisonUI {
         const modeButtons = document.querySelectorAll('.btn-mode');
         
         if (!singleMode || !compareMode || modeButtons.length === 0) {
-            console.error('❌ Éléments d\'UI non trouvés');
+            console.error('Éléments d\'UI non trouvés');
             return;
         }
 
