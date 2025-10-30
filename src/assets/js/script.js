@@ -1,6 +1,6 @@
-import '../css/styles.css';
-//import '../fonts/fontawesome.css';
+import '../css/main.css';
 import '../fonts/all.min.css';
+//import '../fonts/fontawesome.css';
 
 import { JILParser } from './modules/jil-parser.js';
 import { TreeRenderer } from './modules/tree-renderer.js';
@@ -11,7 +11,7 @@ import { ComparisonRenderer } from './modules/comparison-renderer.js';
 
 class AutosysViewer {
     constructor() {
-        console.log('🔍 AUTOSYSVIEWER: Constructeur appelé');
+        console.log('AUTOSYSVIEWER: Constructeur appelé');
         
         try {
             this.boxes = new Map();
@@ -464,9 +464,9 @@ console.log('🔍 État du DOM:', {
 });
 
 if (document.readyState === 'loading') {
-    console.log('🔍 DOM encore en chargement - on attend DOMContentLoaded');
+    console.log('DOM encore en chargement - on attend DOMContentLoaded');
 } else {
-    console.log('🔍 DOM déjà chargé - initialisation immédiate');
+    console.log('DOM déjà chargé - initialisation');
     try {
         window.autosysViewer = new AutosysViewer();
         console.log('iitialisé IMMEDIAT OK');
