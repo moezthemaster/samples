@@ -4,6 +4,7 @@
 @import './components/header.css';
 @import './components/sidebar.css';
 @import './components/tree-view.css';
+@import './components/context.css';
 @import './features/visualization.css';
 @import './features/comparison.css';
 @import './features/edition.css';
