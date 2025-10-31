@@ -18,6 +18,11 @@ export class TreeRenderer {
                     <i class="fas fa-compress-arrows-alt"></i>
                     Replier
                 </div>
+                <div class="context-menu-separator"></div>
+                <div class="context-menu-item" data-action="export-subtree">
+                    <i class="fas fa-download"></i>
+                    Exporter
+                </div>
             `;
             document.body.appendChild(this.contextMenu);
 
@@ -162,7 +167,7 @@ export class TreeRenderer {
 
     handleContextMenuAction(action) {
         if (!this.currentNode || !this.currentJob) return;
-        
+
         switch (action) {
             case 'expand-recursive':
                 this.expandRecursively(this.currentNode, this.currentJob);
@@ -170,8 +175,11 @@ export class TreeRenderer {
             case 'collapse-recursive':
                 this.collapseRecursively(this.currentNode, this.currentJob);
                 break;
+            case 'export-subtree':
+                this.exportSubtree(this.currentJob);
+                break;
         }
-        
+
         this.hideContextMenu();
     }
 
@@ -201,6 +209,15 @@ export class TreeRenderer {
                 }
             });
         }
+    }
+
+    exportSubtree(job) {
+        if (!this.viewer.exportManager) {
+            console.error('ExportManager non disponible');
+            return;
+        }
+
+        this.viewer.exportManager.exportSubtree(job);
     }
 
     getIconForType(type) {

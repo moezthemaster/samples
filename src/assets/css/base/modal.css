@@ -199,3 +199,52 @@
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* modal d'export de sous-arbre (menu contextuel) */
+.export-modal {
+    max-width: 500px;
+}
+
+.export-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-export-option {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.btn-export-option:hover {
+    border-color: var(--accent-color);
+    background: var(--hover-color);
+    transform: translateY(-2px);
+}
+
+.btn-export-option i {
+    font-size: 20px;
+    margin-right: 12px;
+    color: var(--accent-color);
+    min-width: 24px;
+}
+
+.btn-export-option span {
+    font-size: 14px;
+    font-weight: 500;
+    flex: 1;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 5px 0;
+}
