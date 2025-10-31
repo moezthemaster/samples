@@ -21,7 +21,7 @@ export class TreeRenderer {
                 <div class="context-menu-separator"></div>
                 <div class="context-menu-item" data-action="export-subtree">
                     <i class="fas fa-download"></i>
-                    Exporter
+                    Exporter ce job et ses enfants
                 </div>
             `;
             document.body.appendChild(this.contextMenu);
@@ -42,7 +42,10 @@ export class TreeRenderer {
         }
     }
 
-    renderTree(rootBoxes = this.viewer.rootBoxes) {
+    /**
+     * Rendu de l'arbre avec surlignage
+     */
+    renderTree(rootBoxes = this.viewer.rootBoxes, jobsWithHighlights = []) {
         const container = document.getElementById('treeContainer');
         container.innerHTML = '';
 
@@ -51,8 +54,16 @@ export class TreeRenderer {
             return;
         }
 
+        // NOUVEAU : Créer une map des surlignages pour accès rapide
+        const highlightsMap = new Map();
+        jobsWithHighlights.forEach(job => {
+            if (job.highlights) {
+                highlightsMap.set(job.name, job.highlights);
+            }
+        });
+
         rootBoxes.forEach(box => {
-            const node = this.createTreeNode(box);
+            const node = this.createTreeNode(box, highlightsMap);
             container.appendChild(node);
         });
     }
@@ -67,7 +78,10 @@ export class TreeRenderer {
         `;
     }
 
-    createTreeNode(box) {
+    /**
+     * Crée un nœud d'arbre avec surlignage
+     */
+    createTreeNode(box, highlightsMap = new Map()) {
         const node = document.createElement('div');
         node.classList.add('tree-node', 'job-type-' + box.type);
         node.draggable = true;
@@ -85,18 +99,22 @@ export class TreeRenderer {
         
         let conditionIcon = '';
         if (box.attributes.condition) {
-            conditionIcon = '<i title="A des dépendances"></i>';
+            conditionIcon = '<i class="fas fa-link condition-indicator" title="A des dépendances"></i>';
         }
         
         let boxIndicator = '';
         if (box.type === 'BOX') {
-            boxIndicator = ' ';
+            boxIndicator = ' <i class="fas fa-cube box-indicator" title="Box contenant d\'autres jobs"></i>';
         }
-        
+
+        // NOUVEAU : Appliquer le surlignage si disponible
+        const highlights = highlightsMap.get(box.name);
+        const displayName = highlights?.name || box.name;
+        const displayDescription = highlights?.description || box.description;
+
         header.innerHTML = `
             <i class="${this.getIconForType(box.type)}"></i>
-            <span class="job-name">${box.name}${boxIndicator}</span>
-            ${conditionIcon}
+            <span class="job-name">${displayName}</span>
         `;
 
         header.addEventListener('click', (e) => {
@@ -120,7 +138,7 @@ export class TreeRenderer {
             childrenContainer.classList.add('children');
             
             box.children.forEach(child => {
-                const childNode = this.createTreeNode(child);
+                const childNode = this.createTreeNode(child, highlightsMap);
                 childrenContainer.appendChild(childNode);
             });
             
@@ -153,6 +171,7 @@ export class TreeRenderer {
     updateContextMenuOptions(box) {
         const expandItem = this.contextMenu.querySelector('[data-action="expand-recursive"]');
         const collapseItem = this.contextMenu.querySelector('[data-action="collapse-recursive"]');
+        const exportItem = this.contextMenu.querySelector('[data-action="export-subtree"]');
         
         const hasChildren = box.children && box.children.length > 0;
         
@@ -163,11 +182,14 @@ export class TreeRenderer {
             expandItem.classList.add('disabled');
             collapseItem.classList.add('disabled');
         }
+        
+        // L'export est toujours disponible, même pour les jobs sans enfants
+        exportItem.classList.remove('disabled');
     }
 
     handleContextMenuAction(action) {
         if (!this.currentNode || !this.currentJob) return;
-
+        
         switch (action) {
             case 'expand-recursive':
                 this.expandRecursively(this.currentNode, this.currentJob);
@@ -179,7 +201,7 @@ export class TreeRenderer {
                 this.exportSubtree(this.currentJob);
                 break;
         }
-
+        
         this.hideContextMenu();
     }
 
@@ -211,15 +233,6 @@ export class TreeRenderer {
         }
     }
 
-    exportSubtree(job) {
-        if (!this.viewer.exportManager) {
-            console.error('ExportManager non disponible');
-            return;
-        }
-
-        this.viewer.exportManager.exportSubtree(job);
-    }
-
     getIconForType(type) {
         switch (type) {
             case 'BOX': return 'fas fa-cube';
@@ -239,9 +252,13 @@ export class TreeRenderer {
         
         for (let node of allNodes) {
             const jobNameElement = node.querySelector('.job-name');
-            if (jobNameElement && jobNameElement.textContent.trim().replace(' ', '') === job.name) {
-                targetNode = node;
-                break;
+            if (jobNameElement) {
+                // Extraire le nom du job sans les icônes
+                const jobNameText = jobNameElement.textContent.replace(/📦|⚡|📁/g, '').trim();
+                if (jobNameText === job.name) {
+                    targetNode = node;
+                    break;
+                }
             }
         }
 
@@ -283,9 +300,12 @@ export class TreeRenderer {
     findTreeNodeByName(boxName) {
         const allNodes = document.querySelectorAll('.tree-node');
         for (let node of allNodes) {
-            const header = node.querySelector('.tree-node-header');
-            if (header && header.textContent.includes(boxName)) {
-                return node;
+            const jobNameElement = node.querySelector('.job-name');
+            if (jobNameElement) {
+                const jobNameText = jobNameElement.textContent.replace(/📦|⚡|📁/g, '').trim();
+                if (jobNameText === boxName) {
+                    return node;
+                }
             }
         }
         return null;
@@ -311,5 +331,14 @@ export class TreeRenderer {
             }
             parent = parent.parentElement;
         }
+    }
+
+    exportSubtree(job) {
+        if (!this.viewer.exportManager) {
+            console.error('ExportManager non disponible');
+            return;
+        }
+        
+        this.viewer.exportManager.exportSubtree(job);
     }
 }

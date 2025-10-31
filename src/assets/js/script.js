@@ -1,6 +1,5 @@
 import '../css/main.css';
 import '../fonts/all.min.css';
-//import '../fonts/fontawesome.css';
 
 import { JILParser } from './modules/jil-parser.js';
 import { TreeRenderer } from './modules/tree-renderer.js';
@@ -8,6 +7,8 @@ import { ExportManager } from './modules/export-manager.js';
 import { EventManager } from './modules/event-manager.js';
 import { ComparisonManager } from './modules/comparison-manager.js';
 import { ComparisonRenderer } from './modules/comparison-renderer.js';
+import { SearchEngine } from './modules/search-engine.js';
+import { FilterManager } from './modules/filter-manager.js';
 
 class AutosysViewer {
     constructor() {
@@ -21,13 +22,18 @@ class AutosysViewer {
             this.currentFileContent = null;
             this.currentMode = 'single';
             
-            console.log('init modlules');
+            console.log('init modules');
             this.jilParser = new JILParser();
             this.treeRenderer = new TreeRenderer(this);
             this.exportManager = new ExportManager(this);
             this.eventManager = new EventManager(this);
             this.comparisonManager = new ComparisonManager(this);
             this.comparisonRenderer = new ComparisonRenderer(this);
+            
+            // Moteurs de recherche et filtres
+            this.searchEngine = new SearchEngine(this);
+            this.filterManager = new FilterManager(this);
+            
             this.eventManager.initializeEventListeners();
             
             console.log('Constructeur ok');
@@ -39,51 +45,50 @@ class AutosysViewer {
     }
 
     toggleMode(mode) {
-
-    this.currentMode = mode;
-    const singleMode = document.querySelector('.single-mode');
-    const compareMode = document.querySelector('.compare-mode');
-    const modeButtons = document.querySelectorAll('.btn-mode');
-    const fileInfo = document.getElementById('fileInfo');
-    const fileStatus = document.getElementById('fileStatus');
-    
-    console.log('UI:', {
-        singleMode: !!singleMode,
-        compareMode: !!compareMode,
-        modeButtons: modeButtons.length,
-        fileInfo: !!fileInfo
-    });
-    
-    if (mode === 'compare') {
-        document.body.classList.add('compare-mode-active');
-        singleMode.classList.add('hidden');
-        compareMode.classList.remove('hidden');
-        modeButtons[0].classList.remove('active');
-        modeButtons[1].classList.add('active');
+        this.currentMode = mode;
+        const singleMode = document.querySelector('.single-mode');
+        const compareMode = document.querySelector('.compare-mode');
+        const modeButtons = document.querySelectorAll('.btn-mode');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileStatus = document.getElementById('fileStatus');
         
-        if (fileStatus) {
-            fileStatus.classList.add('hidden');
+        console.log('UI:', {
+            singleMode: !!singleMode,
+            compareMode: !!compareMode,
+            modeButtons: modeButtons.length,
+            fileInfo: !!fileInfo
+        });
+        
+        if (mode === 'compare') {
+            document.body.classList.add('compare-mode-active');
+            singleMode.classList.add('hidden');
+            compareMode.classList.remove('hidden');
+            modeButtons[0].classList.remove('active');
+            modeButtons[1].classList.add('active');
+            
+            if (fileStatus) {
+                fileStatus.classList.add('hidden');
+            }
+            
+            console.log('comparaison ');
+        } else {
+            document.body.classList.remove('compare-mode-active');
+            singleMode.classList.remove('hidden');
+            compareMode.classList.add('hidden');
+            modeButtons[0].classList.add('active');
+            modeButtons[1].classList.remove('active');
+            
+            if (fileStatus) {
+                fileStatus.classList.remove('hidden');
+            }
+            
+            if (this.comparisonManager) {
+                this.comparisonManager.resetComparison();
+            }
+            console.log('visualistion');
         }
         
-        console.log('comparaison ');
-    } else {
-        document.body.classList.remove('compare-mode-active');
-        singleMode.classList.remove('hidden');
-        compareMode.classList.add('hidden');
-        modeButtons[0].classList.add('active');
-        modeButtons[1].classList.remove('active');
-        
-        if (fileStatus) {
-            fileStatus.classList.remove('hidden');
-        }
-        
-        if (this.comparisonManager) {
-            this.comparisonManager.resetComparison();
-        }
-        console.log('visualistion');
-    }
-    
-    this.resetView();
+        this.resetView();
     }
 
     async handleFileSelect(event) {
@@ -105,6 +110,13 @@ class AutosysViewer {
             const parsingResult = this.jilParser.parseJILFile(content);
             this.boxes = parsingResult.boxes;
             this.rootBoxes = parsingResult.rootBoxes;
+            
+            // Construire l'index de recherche
+            console.log('Construction de l\'index de recherche...');
+            this.searchEngine.buildSearchIndex();
+            
+            // Initialiser les filtres
+            this.filterManager.resetAllFilters();
             
             this.applyFilters();
             
@@ -146,67 +158,303 @@ class AutosysViewer {
         });
     }
 
-    applyFilters() {
+    async applyFilters() {
         if (this.currentMode === 'compare' && this.comparisonManager.result) {
             this.comparisonRenderer.renderComparisonTree();
             this.updateComparisonCounter();
         } else {
-            const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
-
-            this.filteredBoxes.clear();
-            const filteredRootBoxes = [];
-            const boxesToExpand = new Set();
-
-            const filterRecursive = (box) => {
-                const matchesSearch = searchTerm === '' || 
-                                    box.name.toLowerCase().includes(searchTerm) || 
-                                    (box.description && box.description.toLowerCase().includes(searchTerm));
-
-                let filteredChildren = [];
-                if (box.children && box.children.length > 0) {
-                    box.children.forEach(child => {
-                        const filteredChild = filterRecursive(child);
-                        if (filteredChild) {
-                            filteredChildren.push(filteredChild);
-                            
-                            if (searchTerm && (child.name.toLowerCase().includes(searchTerm) || 
-                                (child.description && child.description.toLowerCase().includes(searchTerm)))) {
-                                boxesToExpand.add(box.name);
-                            }
-                        }
-                    });
-                }
-
-                const shouldKeep = matchesSearch || filteredChildren.length > 0;
-
-                if (shouldKeep) {
-                    const filteredBox = {
-                        ...box,
-                        children: filteredChildren
-                    };
-                    this.filteredBoxes.set(box.name, filteredBox);
-                    return filteredBox;
-                }
-
-                return null;
-            };
-
-            this.rootBoxes.forEach(box => {
-                const filteredBox = filterRecursive(box);
-                if (filteredBox) {
-                    filteredRootBoxes.push(filteredBox);
-                }
-            });
-
-            this.treeRenderer.renderTree(filteredRootBoxes);
+            // NOUVEAU : Utiliser le système de filtres avancés
+            const filterResults = this.filterManager.applyAllFilters();
             
+            this.applyFilterResults(filterResults);
+        }
+    }
+
+    /**
+     * Applique les résultats des filtres avancés
+     */
+    applyFilterResults(filterResults) {
+        this.filteredBoxes.clear();
+        
+        const { jobs: filteredJobs, filterTime, activeFilterCount } = filterResults;
+        
+        if (activeFilterCount === 0) {
+            // Aucun filtre - afficher tout
+            this.filteredBoxes = new Map(this.boxes);
+            const filteredRootBoxes = [...this.rootBoxes];
+            this.treeRenderer.renderTree(filteredRootBoxes);
+            this.treeRenderer.collapseAll();
+        } else {
+            // Appliquer les résultats des filtres
+            const boxesToExpand = new Set();
+            
+            // Préparer les données de surlignage pour la recherche texte
+            const searchTerm = this.filterManager.activeFilters.textSearch;
+            const jobsWithHighlights = filteredJobs.map(job => ({
+                ...job,
+                highlights: this.searchEngine.generateHighlightData(job, searchTerm)
+            }));
+            
+            // Reconstruire l'arborescence filtrée
+            const filteredRootBoxes = this.buildFilteredTree(filteredJobs, boxesToExpand);
+            this.treeRenderer.renderTree(filteredRootBoxes, jobsWithHighlights);
+            
+            // Expansion des branches concernées
             if (searchTerm) {
-                setTimeout(() => this.treeRenderer.expandMatchingBoxes(boxesToExpand), 100);
-            } else {
-                setTimeout(() => this.treeRenderer.collapseAll(), 100);
+                setTimeout(() => {
+                    this.treeRenderer.expandMatchingBoxes(boxesToExpand);
+                }, 100);
             }
         }
+        
         this.updateJobCounter();
+        
+        // Afficher les stats détaillées
+        this.displayAdvancedFilterStats(filterResults);
+    }
+
+    /**
+     * Construit l'arborescence filtrée en gardant la hiérarchie
+     */
+    buildFilteredTree(matchingJobs, boxesToExpand) {
+        const jobSet = new Set(matchingJobs.map(job => job.name));
+        const filteredRootBoxes = [];
+
+        const filterRecursive = (box) => {
+            const shouldKeep = jobSet.has(box.name);
+            
+            let filteredChildren = [];
+            if (box.children && box.children.length > 0) {
+                box.children.forEach(child => {
+                    const filteredChild = filterRecursive(child);
+                    if (filteredChild) {
+                        filteredChildren.push(filteredChild);
+                        
+                        // Marquer pour expansion si un enfant match
+                        if (jobSet.has(child.name)) {
+                            boxesToExpand.add(box.name);
+                        }
+                    }
+                });
+            }
+
+            const hasMatchingChild = filteredChildren.length > 0;
+            
+            if (shouldKeep || hasMatchingChild) {
+                const filteredBox = {
+                    ...box,
+                    children: filteredChildren
+                };
+                this.filteredBoxes.set(box.name, filteredBox);
+                
+                if (hasMatchingChild && !shouldKeep) {
+                    boxesToExpand.add(box.name);
+                }
+                
+                return filteredBox;
+            }
+
+            return null;
+        };
+
+        this.rootBoxes.forEach(box => {
+            const filteredBox = filterRecursive(box);
+            if (filteredBox) {
+                filteredRootBoxes.push(filteredBox);
+            }
+        });
+
+        return filteredRootBoxes;
+    }
+
+    /**
+     * Affiche les statistiques avancées des filtres
+     */
+    displayAdvancedFilterStats(filterResults) {
+        const searchStats = document.getElementById('searchStats') || this.createSearchStatsElement();
+        const { activeFilterCount, filterTime } = filterResults;
+        const filterStats = this.filterManager.getFilterStats();
+        
+        if (activeFilterCount === 0) {
+            searchStats.style.display = 'none';
+            return;
+        }
+
+        let statsHTML = `
+            <div class="search-stats-main">
+                <strong>${filterResults.jobs.length}</strong> résultat${filterResults.jobs.length !== 1 ? 's' : ''} 
+                <span class="search-time">• ${filterTime.toFixed(0)}ms</span>
+                <span class="active-filters-count">• ${activeFilterCount} filtre${activeFilterCount !== 1 ? 's' : ''}</span>
+            </div>
+        `;
+
+        // Afficher les filtres actifs
+        const activeFilters = this.getActiveFiltersDisplay();
+        if (activeFilters) {
+            statsHTML += `<div class="active-filters">${activeFilters}</div>`;
+        }
+
+        // Breakdown par type
+        const typeDistribution = filterStats.jobTypeDistribution;
+        statsHTML += `<div class="search-stats-breakdown">`;
+        
+        if (typeDistribution.BOX > 0) {
+            statsHTML += `<span class="stat-type-box">${typeDistribution.BOX} BOX</span>`;
+        }
+        if (typeDistribution.CMD > 0) {
+            statsHTML += `<span class="stat-type-cmd">${typeDistribution.CMD} CMD</span>`;
+        }
+        if (typeDistribution.FT > 0) {
+            statsHTML += `<span class="stat-type-ft">${typeDistribution.FT} FT</span>`;
+        }
+        if (typeDistribution.UNKNOWN > 0) {
+            statsHTML += `<span class="stat-type-unknown">${typeDistribution.UNKNOWN} Autres</span>`;
+        }
+        
+        statsHTML += `</div>`;
+
+        searchStats.innerHTML = statsHTML;
+        searchStats.style.display = 'block';
+    }
+
+    /**
+     * Obtient l'affichage des filtres actifs
+     */
+    getActiveFiltersDisplay() {
+        const { activeFilters } = this.filterManager;
+        const activeFiltersList = [];
+        
+        // Filtre texte
+        if (activeFilters.textSearch) {
+            activeFiltersList.push(`<span class="active-filter-text">"${activeFilters.textSearch}"</span>`);
+        }
+        
+        // Filtres type
+        if (activeFilters.jobTypes.size > 0) {
+            const types = Array.from(activeFilters.jobTypes).map(type => 
+                `<span class="active-filter-type active-filter-${type.toLowerCase()}">${type}</span>`
+            ).join('');
+            activeFiltersList.push(types);
+        }
+        
+        // Filtres attributs
+        if (activeFilters.attributes.size > 0) {
+            activeFilters.attributes.forEach((values, attr) => {
+                values.forEach(value => {
+                    activeFiltersList.push(
+                        `<span class="active-filter-attr">${attr}: ${value}</span>`
+                    );
+                });
+            });
+        }
+        
+        // Filtres avancés
+        Object.entries(activeFilters.advanced).forEach(([key, value]) => {
+            if (value !== null) {
+                const label = this.getAdvancedFilterLabel(key, value);
+                activeFiltersList.push(`<span class="active-filter-advanced">${label}</span>`);
+            }
+        });
+        
+        return activeFiltersList.length > 0 ? activeFiltersList.join('') : null;
+    }
+
+    /**
+     * Obtient le libellé des filtres avancés
+     */
+    getAdvancedFilterLabel(filterKey, value) {
+        const labels = {
+            hasDependencies: { true: 'Avec dépendances', false: 'Sans dépendances' },
+            hasChildren: { true: 'Avec enfants', false: 'Sans enfants' },
+            hasConditions: { true: 'Avec conditions', false: 'Sans conditions' }
+        };
+        
+        return labels[filterKey] ? labels[filterKey][value] : `${filterKey}: ${value}`;
+    }
+
+    /**
+     * Crée l'élément d'affichage des stats avancées
+     */
+    createSearchStatsElement() {
+        const statsEl = document.createElement('div');
+        statsEl.id = 'searchStats';
+        statsEl.className = 'search-stats';
+        
+        const searchContainer = document.querySelector('.filter-group');
+        if (searchContainer) {
+            searchContainer.appendChild(statsEl);
+        }
+        
+        return statsEl;
+    }
+
+    /**
+     * NOUVEAU : Gestion des filtres rapides
+     */
+    toggleJobTypeFilter(jobType) {
+        const filterResults = this.filterManager.toggleJobTypeFilter(jobType);
+        this.applyFilterResults(filterResults);
+        this.updateFilterUI();
+    }
+
+    /**
+     * NOUVEAU : Définit le filtre texte
+     */
+    setTextFilter(text) {
+        const filterResults = this.filterManager.setTextFilter(text);
+        this.applyFilterResults(filterResults);
+        this.updateFilterUI();
+    }
+
+    /**
+     * NOUVEAU : Définit un filtre avancé
+     */
+    setAdvancedFilter(filterName, value) {
+        const filterResults = this.filterManager.setAdvancedFilter(filterName, value);
+        this.applyFilterResults(filterResults);
+        this.updateFilterUI();
+    }
+
+    /**
+     * NOUVEAU : Réinitialise tous les filtres
+     */
+    resetAllFilters() {
+        const filterResults = this.filterManager.resetAllFilters();
+        this.applyFilterResults(filterResults);
+        this.updateFilterUI();
+        
+        // Réinitialiser l'UI
+        const searchFilter = document.getElementById('searchFilter');
+        if (searchFilter) {
+            searchFilter.value = '';
+        }
+    }
+
+    /**
+     * NOUVEAU : Met à jour l'interface des filtres
+     */
+    updateFilterUI() {
+        // Mettre à jour les boutons de filtre type
+        const typeButtons = document.querySelectorAll('.filter-type-btn');
+        typeButtons.forEach(btn => {
+            const jobType = btn.dataset.jobType;
+            if (this.filterManager.activeFilters.jobTypes.has(jobType)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        // Mettre à jour les filtres avancés
+        const advancedFilters = document.querySelectorAll('.advanced-filter input');
+        advancedFilters.forEach(input => {
+            const filterName = input.name;
+            const currentValue = this.filterManager.activeFilters.advanced[filterName];
+            
+            if (input.type === 'checkbox') {
+                input.checked = currentValue === true;
+            }
+        });
     }
 
     updateJobCounter() {
@@ -270,127 +518,152 @@ class AutosysViewer {
         detailsContent.innerHTML = this.generateJobDetailsHTML(job);
     }
 
-    generateJobDetailsHTML(job) {
-        const importantAttributes = ['command', 'machine', 'owner', 'condition', 'date_conditions', 'start_times', 'run_calendar', 'exclude_calendar'];
+generateJobDetailsHTML(job) {
+    // Récupérer le terme de recherche actuel
+    const searchTerm = document.getElementById('searchFilter').value.toLowerCase().trim();
+    
+    // Fonction pour appliquer le surlignage si recherche active
+    const highlightIfNeeded = (text) => {
+        if (!searchTerm || !text) return text;
         
-        let dependenciesHTML = '';
-        if (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) {
-            dependenciesHTML = `
-            <div class="detail-section">
-                <h4><i class="fas fa-link"></i> Dépendances et Conditions</h4>
-                ${job.attributes.condition ? `
-                <div class="detail-item">
-                    <span class="detail-label">Condition:</span>
-                    <span class="detail-value condition-code">${this.formatCondition(job.attributes.condition)}</span>
-                </div>
-                ` : ''}
-                ${job.dependsOn.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Dépend de:</span>
-                    <span class="detail-value">${job.dependsOn.join(', ')}</span>
-                </div>
-                ` : ''}
-                ${job.requiredBy.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Requis par:</span>
-                    <span class="detail-value">${job.requiredBy.join(', ')}</span>
-                </div>
-                ` : ''}
-            </div>
-            `;
-        }
+        // Échapper les caractères spéciaux pour la regex
+        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
         
-        return `
-            <div class="detail-section">
-                <h4><i class="fas fa-id-card"></i> Informations générales</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Nom:</span>
-                    <span class="detail-value">${job.name}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Type:</span>
-                    <span class="detail-value">${job.type}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Description:</span>
-                    <span class="detail-value">${job.description || 'Non spécifiée'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Parent:</span>
-                    <span class="detail-value">${job.parent || 'Aucun (Box racine)'}</span>
-                </div>
-                ${job.children && job.children.length > 0 ? `
-                <div class="detail-item">
-                    <span class="detail-label">Enfants:</span>
-                    <span class="detail-value">${job.children.length} job(s)</span>
-                </div>
-                ` : ''}
-            </div>
+        return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    };
 
-            ${job.attributes.command ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-terminal"></i> Commande</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Commande:</span>
-                    <span class="detail-value command">${job.attributes.command}</span>
-                </div>
-            </div>
-            ` : ''}
+    // Section des attributs principaux (toujours affichés s'ils existent)
+    const mainSections = [
+        {
+            title: 'Informations générales',
+            icon: 'fa-id-card',
+            items: [
+                { label: 'Nom', value: job.name },
+                { label: 'Type', value: job.type },
+                { label: 'Description', value: job.description || 'Non spécifiée' },
+                { label: 'Parent', value: job.parent || 'Aucun (Box racine)' },
+                job.children && job.children.length > 0 ? 
+                    { label: 'Enfants', value: `${job.children.length} job(s)` } : null
+            ].filter(Boolean)
+        },
+        job.attributes.command ? {
+            title: 'Commande',
+            icon: 'fa-terminal',
+            items: [
+                { label: 'Commande', value: job.attributes.command }
+            ]
+        } : null,
+        job.attributes.machine ? {
+            title: 'Machine',
+            icon: 'fa-server',
+            items: [
+                { label: 'Machine', value: job.attributes.machine }
+            ]
+        } : null,
+        job.attributes.owner ? {
+            title: 'Propriétaire',
+            icon: 'fa-user',
+            items: [
+                { label: 'Owner', value: job.attributes.owner }
+            ]
+        } : null
+    ].filter(Boolean);
 
-            ${job.attributes.machine ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-server"></i> Machine</h4>
-                <div class="detail-item">
-                    <span class="detail-label">Machine:</span>
-                    <span class="detail-value">${job.attributes.machine}</span>
-                </div>
-            </div>
-            ` : ''}
+    // Section Dépendances et Conditions
+    const dependenciesSection = (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) ? {
+        title: 'Dépendances et Conditions',
+        icon: 'fa-link',
+        items: [
+            job.attributes.condition ? { label: 'Condition', value: job.attributes.condition } : null,
+            job.dependsOn.length > 0 ? { label: 'Dépend de', value: job.dependsOn.join(', ') } : null,
+            job.requiredBy.length > 0 ? { label: 'Requis par', value: job.requiredBy.join(', ') } : null
+        ].filter(Boolean)
+    } : null;
 
-            ${dependenciesHTML}
+    // Section Planification
+    const schedulingAttributes = ['run_calendar', 'start_times', 'date_conditions', 'exclude_calendar'];
+    const schedulingItems = schedulingAttributes
+        .filter(attr => job.attributes[attr])
+        .map(attr => ({ label: this.formatAttributeLabel(attr), value: job.attributes[attr] }));
+    
+    const schedulingSection = schedulingItems.length > 0 ? {
+        title: 'Planification',
+        icon: 'fa-calendar-alt',
+        items: schedulingItems
+    } : null;
 
-            ${job.attributes.run_calendar || job.attributes.start_times || job.attributes.date_conditions ? `
-            <div class="detail-section">
-                <h4><i class="fas fa-calendar-alt"></i> Planification</h4>
-                ${job.attributes.run_calendar ? `
-                <div class="detail-item">
-                    <span class="detail-label">Calendrier:</span>
-                    <span class="detail-value">${job.attributes.run_calendar}</span>
-                </div>
-                ` : ''}
-                ${job.attributes.start_times ? `
-                <div class="detail-item">
-                    <span class="detail-label">Heures de début:</span>
-                    <span class="detail-value">${job.attributes.start_times}</span>
-                </div>
-                ` : ''}
-                ${job.attributes.date_conditions ? `
-                <div class="detail-item">
-                    <span class="detail-label">Conditions de date:</span>
-                    <span class="detail-value">${job.attributes.date_conditions}</span>
-                </div>
-                ` : ''}
-            </div>
-            ` : ''}
+    // Section TOUS les autres attributs
+    const commonAttributes = [
+        'command', 'machine', 'owner', 'condition', 'date_conditions', 
+        'start_times', 'run_calendar', 'exclude_calendar', 'description'
+    ];
+    
+    const otherAttributes = Object.entries(job.attributes)
+        .filter(([key]) => !commonAttributes.includes(key))
+        .map(([key, value]) => ({
+            label: this.formatAttributeLabel(key),
+            value: String(value)
+        }));
 
-            <div class="detail-section">
-                <h4><i class="fas fa-cogs"></i> Autres attributs</h4>
-                ${Object.entries(job.attributes)
-                    .filter(([key]) => !importantAttributes.includes(key))
-                    .map(([key, value]) => `
-                    <div class="detail-item">
-                        <span class="detail-label">${key}:</span>
-                        <span class="detail-value">${value}</span>
-                    </div>
-                    `).join('')}
-                ${Object.entries(job.attributes).filter(([key]) => !importantAttributes.includes(key)).length === 0 ? `
-                    <div class="detail-item">
-                        <span class="detail-label">Aucun autre attribut</span>
-                    </div>
-                ` : ''}
-            </div>
-        `;
+    const otherAttributesSection = otherAttributes.length > 0 ? {
+        title: 'Tous les attributs',
+        icon: 'fa-cogs',
+        items: otherAttributes
+    } : null;
+
+    // Générer le HTML
+    let html = '';
+
+    // Sections principales
+    mainSections.forEach(section => {
+        html += this.generateDetailSection(section, highlightIfNeeded);
+    });
+
+    // Section Dépendances
+    if (dependenciesSection) {
+        html += this.generateDetailSection(dependenciesSection, highlightIfNeeded);
     }
+
+    // Section Planification
+    if (schedulingSection) {
+        html += this.generateDetailSection(schedulingSection, highlightIfNeeded);
+    }
+
+    // Section Tous les autres attributs
+    if (otherAttributesSection) {
+        html += this.generateDetailSection(otherAttributesSection, highlightIfNeeded);
+    }
+
+    return html;
+}
+
+/**
+ * Formate le libellé d'un attribut (ex: "run_calendar" → "Run Calendar")
+ */
+formatAttributeLabel(attribute) {
+    return attribute
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+}
+
+/**
+ * Génère une section de détails
+ */
+generateDetailSection(section, highlightIfNeeded) {
+    return `
+        <div class="detail-section">
+            <h4><i class="fas ${section.icon}"></i> ${section.title}</h4>
+            ${section.items.map(item => `
+                <div class="detail-item">
+                    <span class="detail-label">${item.label}:</span>
+                    <span class="detail-value">${highlightIfNeeded(item.value)}</span>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
 
     formatCondition(condition) {
         if (!condition) return '';
@@ -402,8 +675,7 @@ class AutosysViewer {
     }
 
     resetView() {
-        document.getElementById('searchFilter').value = '';
-        this.applyFilters();
+        this.resetAllFilters();
         
         if (this.currentMode === 'single') {
             this.treeRenderer.collapseAll();

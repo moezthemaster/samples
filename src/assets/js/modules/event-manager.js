@@ -10,7 +10,8 @@ export class EventManager {
         this.setupActionEvents();
         this.setupModalEvents();
         this.setupComparisonEvents();
-        this.setupNewUploadSystem(); // Nouveau système unifié
+        this.setupNewUploadSystem();
+        this.setupAdvancedFilters(); // NOUVEAU
         console.log('Tous les événements initialisés');
     }
 
@@ -200,14 +201,192 @@ export class EventManager {
     }
 
     setupFilterEvents() {
-        console.log('Configuration des événements de filtre');
+        console.log('Configuration des événements de filtre optimisés');
         
         const searchFilter = document.getElementById('searchFilter');
         
         if (searchFilter) {
-            searchFilter.addEventListener('input', () => {
-                console.log('Filtre de recherche modifié:', searchFilter.value);
-                this.viewer.applyFilters();
+            // Recherche optimisée
+            searchFilter.addEventListener('input', async (e) => {
+                const searchTerm = e.target.value;
+                console.log('Recherche optimisée déclenchée:', searchTerm);
+                
+                try {
+                    this.viewer.setTextFilter(searchTerm);
+                } catch (error) {
+                    console.error('Erreur lors de la recherche:', error);
+                }
+            });
+
+            // Indicateur visuel pendant la recherche
+            searchFilter.addEventListener('input', (e) => {
+                const searchContainer = e.target.closest('.search-input');
+                if (e.target.value.trim() !== '') {
+                    searchContainer.classList.add('search-loading');
+                    setTimeout(() => {
+                        searchContainer.classList.remove('search-loading');
+                    }, 300);
+                } else {
+                    searchContainer.classList.remove('search-loading');
+                }
+            });
+
+            // Raccourci clavier Ctrl+F
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                    e.preventDefault();
+                    searchFilter.focus();
+                    searchFilter.select();
+                }
+            });
+
+            // Échap pour effacer la recherche
+            searchFilter.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.target.value = '';
+                    this.viewer.setTextFilter('');
+                }
+            });
+        }
+    }
+
+    /**
+     * NOUVEAU : Configuration des filtres avancés
+     */
+    setupAdvancedFilters() {
+        console.log('Configuration des filtres avancés');
+        
+        // Créer l'interface des filtres avancés
+        this.createAdvancedFiltersUI();
+        
+        // Filtres rapides par type
+        this.setupQuickTypeFilters();
+        
+        // Filtres avancés
+        this.setupAdvancedFilterControls();
+        
+        // Bouton reset
+        this.setupResetFilter();
+    }
+
+    /**
+     * Crée l'interface des filtres avancés
+     */
+    createAdvancedFiltersUI() {
+        const filtersSection = document.querySelector('.filters-section');
+        if (!filtersSection) return;
+
+        // Ajouter les filtres rapides
+        const quickFiltersHTML = `
+            <div class="filter-group">
+                <label>Filtres rapides:</label>
+                <div class="quick-filters">
+                    <button class="filter-type-btn" data-job-type="BOX">
+                        <i class="fas fa-cube"></i> BOX
+                    </button>
+                    <button class="filter-type-btn" data-job-type="CMD">
+                        <i class="fas fa-terminal"></i> CMD
+                    </button>
+                    <button class="filter-type-btn" data-job-type="FT">
+                        <i class="fas fa-exchange-alt"></i> FT
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Ajouter les filtres avancés
+        const advancedFiltersHTML = `
+            <div class="filter-group advanced-filters">
+                <label>
+                    <i class="fas fa-sliders-h"></i> Filtres avancés
+                    <span class="toggle-advanced">▼</span>
+                </label>
+                <div class="advanced-filters-content hidden">
+                    <div class="advanced-filter">
+                        <label>
+                            <input type="checkbox" name="hasDependencies">
+                            Avec dépendances
+                        </label>
+                    </div>
+                    <div class="advanced-filter">
+                        <label>
+                            <input type="checkbox" name="hasChildren">
+                            Avec enfants
+                        </label>
+                    </div>
+                    <div class="advanced-filter">
+                        <label>
+                            <input type="checkbox" name="hasConditions">
+                            Avec conditions
+                        </label>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn-reset-filters">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insérer après la recherche
+        const searchGroup = filtersSection.querySelector('.filter-group');
+        if (searchGroup) {
+            searchGroup.insertAdjacentHTML('afterend', quickFiltersHTML + advancedFiltersHTML);
+        }
+    }
+
+    /**
+     * Configure les filtres rapides par type
+     */
+    setupQuickTypeFilters() {
+        const typeButtons = document.querySelectorAll('.filter-type-btn');
+        
+        typeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const jobType = btn.dataset.jobType;
+                console.log(`Filtre type activé: ${jobType}`);
+                this.viewer.toggleJobTypeFilter(jobType);
+            });
+        });
+    }
+
+    /**
+     * Configure les contrôles des filtres avancés
+     */
+    setupAdvancedFilterControls() {
+        // Toggle des filtres avancés
+        const toggleBtn = document.querySelector('.toggle-advanced');
+        const advancedContent = document.querySelector('.advanced-filters-content');
+        
+        if (toggleBtn && advancedContent) {
+            toggleBtn.addEventListener('click', () => {
+                advancedContent.classList.toggle('hidden');
+                toggleBtn.textContent = advancedContent.classList.contains('hidden') ? '▼' : '▲';
+            });
+        }
+
+        // Filtres avancés
+        const advancedFilters = document.querySelectorAll('.advanced-filter input');
+        advancedFilters.forEach(input => {
+            input.addEventListener('change', (e) => {
+                const filterName = e.target.name;
+                const value = e.target.checked;
+                console.log(`Filtre avancé ${filterName}: ${value}`);
+                this.viewer.setAdvancedFilter(filterName, value);
+            });
+        });
+    }
+
+    /**
+     * Configure le bouton reset
+     */
+    setupResetFilter() {
+        const resetBtn = document.querySelector('.btn-reset-filters');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                console.log('Réinitialisation de tous les filtres');
+                this.viewer.resetAllFilters();
             });
         }
     }
