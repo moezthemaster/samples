@@ -1,192 +1,376 @@
 export class ExportManager {
     constructor(viewer) {
         this.viewer = viewer;
+        this.exportConfig = {
+            png: { scale: 2, quality: 1.0, timeout: 30000 },
+            pdf: { scale: 1.5, quality: 0.9, timeout: 45000 },
+            html: { includeMetadata: true, timeout: 10000 }
+        };
+        this.isExporting = false;
+    }
+
+    validateExportPrerequisites() {
+        const errors = [];
+        
+        if (this.viewer.boxes.size === 0) {
+            errors.push('Veuillez charger un fichier JIL avant d\'exporter');
+        }
+        
+        if (!document.getElementById('treeContainer')) {
+            errors.push('Élément d\'arborescence non trouvé dans le DOM');
+        }
+        
+        return errors;
+    }
+
+    validateLibrary(format) {
+        const libraryChecks = {
+            png: () => typeof window.html2canvas !== 'undefined',
+            pdf: () => typeof window.html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined',
+            html: () => true
+        };
+        
+        const check = libraryChecks[format];
+        return check ? check() : false;
+    }
+
+    handleExportError(format, error, userMessage = null) {
+        console.error(`Erreur export ${format.toUpperCase()}:`, error);
+        
+        const defaultMessages = {
+            png: 'Erreur lors de l\'export PNG',
+            pdf: 'Erreur lors de l\'export PDF', 
+            html: 'Erreur lors de l\'export HTML'
+        };
+        
+        const message = userMessage || defaultMessages[format] || 'Erreur lors de l\'export';
+        alert(`${message}: ${error.message || error}`);
+    }
+
+    async withTimeout(promise, timeoutMs, operation) {
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error(`${operation} a dépassé le temps imparti (${timeoutMs}ms)`));
+            }, timeoutMs);
+        });
+
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    saveExportState() {
+        return {
+            rootBoxes: this.viewer.rootBoxes,
+            boxes: this.viewer.boxes,
+            filteredBoxes: this.viewer.filteredBoxes,
+            treeStates: this.saveTreeState(),
+            scrollY: window.scrollY,
+            timestamp: Date.now()
+        };
+    }
+
+    restoreExportState(state) {
+        this.viewer.rootBoxes = state.rootBoxes;
+        this.viewer.boxes = state.boxes;
+        this.viewer.filteredBoxes = state.filteredBoxes;
+        this.restoreTreeState(state.treeStates);
+        window.scrollTo(0, state.scrollY);
+        this.viewer.treeRenderer.renderTree(state.rootBoxes);
+    }
+
+    calculateOptimalDelay() {
+        const totalJobs = this.viewer.boxes.size;
+        if (totalJobs < 50) return 500;
+        if (totalJobs < 200) return 1000;
+        if (totalJobs < 500) return 1500;
+        return 2000;
+    }
+
+    waitForDOMUpdate(delay = null) {
+        const actualDelay = delay || this.calculateOptimalDelay();
+        return new Promise(resolve => {
+            // Forcer un reflow pour s'assurer que le DOM est à jour
+            document.body.offsetHeight;
+            setTimeout(resolve, actualDelay);
+        });
+    }
+
+    async showExportProgress(message, duration = 2000) {
+        // notification de progression
+        const progressEl = document.createElement('div');
+        progressEl.className = 'export-progress-notification';
+        progressEl.innerHTML = `
+            <div class="export-progress-content">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        progressEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            animation: slideInRight 0.3s ease;
+        `;
+
+        document.body.appendChild(progressEl);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                if (progressEl.parentNode) {
+                    progressEl.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => progressEl.remove(), 300);
+                }
+            }, duration);
+        }
+
+        return progressEl;
+    }
+
+    async withExportProgress(operation, format) {
+        if (this.isExporting) {
+            throw new Error('Un export est déjà en cours');
+        }
+
+        this.isExporting = true;
+        const progressEl = await this.showExportProgress(`Préparation de l'export ${format.toUpperCase()}...`, 0);
+
+        try {
+            const result = await operation();
+            progressEl.querySelector('span').textContent = `Export ${format.toUpperCase()} terminé !`;
+            progressEl.querySelector('i').className = 'fas fa-check-circle';
+            progressEl.style.background = '#10b981';
+            
+            setTimeout(() => {
+                if (progressEl.parentNode) {
+                    progressEl.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => progressEl.remove(), 300);
+                }
+            }, 2000);
+
+            return result;
+        } catch (error) {
+            if (progressEl.parentNode) {
+                progressEl.querySelector('span').textContent = `Échec de l'export ${format.toUpperCase()}`;
+                progressEl.querySelector('i').className = 'fas fa-exclamation-circle';
+                progressEl.style.background = '#ef4444';
+                
+                setTimeout(() => {
+                    if (progressEl.parentNode) progressEl.remove();
+                }, 3000);
+            }
+            throw error;
+        } finally {
+            this.isExporting = false;
+        }
+    }
+
+    createOptimizedExportContainer(sourceElement) {
+        const container = document.createElement('div');
+        const padding = 40;
+        const width = Math.max(sourceElement.scrollWidth, 800) + padding;
+        
+        container.style.cssText = `
+            position: absolute;
+            left: -10000px;
+            top: -10000px;
+            width: ${width}px;
+            background: white;
+            padding: ${padding}px;
+            z-index: -1;
+            box-sizing: border-box;
+        `;
+        
+        const clonedElement = sourceElement.cloneNode(true);
+        this.prepareElementForExport(clonedElement);
+        container.appendChild(clonedElement);
+        document.body.appendChild(container);
+        
+        return container;
+    }
+
+    prepareElementForExport(element) {
+        const nodes = element.querySelectorAll('.tree-node');
+        nodes.forEach(node => {
+            node.classList.add('expanded');
+            node.classList.remove('collapsed');
+            
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.cssText = `
+                    display: block !important;
+                    max-height: none !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                    height: auto !important;
+                    overflow: visible !important;
+                `;
+            }
+        });
+
+        element.style.cssText = `
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            display: block !important;
+            background: white !important;
+        `;
     }
 
     async exportToPNG() {
-        if (typeof window.html2canvas === 'undefined') {
-            alert('Fonctionnalité d\'export PNG non disponible - html2canvas non chargé');
-            return;
-        }
-        
-        if (this.viewer.boxes.size === 0) {
-            alert('Veuillez charger un fichier JIL avant d\'exporter');
-            return;
-        }
-        
-        try {
-            this.viewer.showLoading();
-            
-            const originalStates = this.saveTreeState();
-            const originalScroll = window.scrollY;
+        return this.withExportProgress(async () => {
+            // Validation
+            const errors = this.validateExportPrerequisites();
+            if (errors.length > 0) {
+                throw new Error(errors.join(', '));
+            }
 
-            this.expandAllForExport();
-            await new Promise(resolve => setTimeout(resolve, 500));
-            const treeContainer = document.getElementById('treeContainer');
-            const exportContainer = document.createElement('div');
-            exportContainer.style.cssText = `
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: ${treeContainer.scrollWidth}px;
-                background: white;
-                padding: 20px;
-            `;
+            if (!this.validateLibrary('png')) {
+                throw new Error('Fonctionnalité PNG non disponible - html2canvas non chargé');
+            }
+
+            const originalState = this.saveExportState();
             
-            const clonedTree = treeContainer.cloneNode(true);
-            clonedTree.style.cssText = `
-                width: 100%;
-                height: auto;
-                overflow: visible;
-            `;
-            
-            const clonedNodes = clonedTree.querySelectorAll('.tree-node');
-            clonedNodes.forEach(node => {
-                node.classList.add('expanded');
-                node.classList.remove('collapsed');
+            try {
+                this.expandAllForExport();
+                await this.waitForDOMUpdate();
+
+                const treeContainer = document.getElementById('treeContainer');
+                const exportContainer = this.createOptimizedExportContainer(treeContainer);
+
+                const canvas = await this.withTimeout(
+                    window.html2canvas(exportContainer, {
+                        backgroundColor: '#ffffff',
+                        scale: this.exportConfig.png.scale,
+                        useCORS: true,
+                        allowTaint: false,
+                        logging: false,
+                        width: exportContainer.scrollWidth,
+                        height: exportContainer.scrollHeight,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: exportContainer.scrollWidth,
+                        windowHeight: exportContainer.scrollHeight
+                    }),
+                    this.exportConfig.png.timeout,
+                    'Capture PNG'
+                );
+
+                document.body.removeChild(exportContainer);
+                this.downloadCanvasAsPNG(canvas, `autosys-${this.getFormattedDate()}.png`);
                 
-                const children = node.querySelector('.children');
-                if (children) {
-                    children.style.cssText = `
-                        display: block;
-                        max-height: none;
-                        opacity: 1;
-                        visibility: visible;
-                    `;
-                }
-            });
-            
-            exportContainer.appendChild(clonedTree);
-            document.body.appendChild(exportContainer);
-            
-            const canvas = await window.html2canvas(exportContainer, {
-                backgroundColor: '#ffffff',
-                scale: 1.5,
-                useCORS: true,
-                allowTaint: false,
-                logging: false,
-                width: exportContainer.scrollWidth,
-                height: exportContainer.scrollHeight,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: exportContainer.scrollWidth,
-                windowHeight: exportContainer.scrollHeight
-            });
-            
-            document.body.removeChild(exportContainer);
-            
-            this.restoreTreeState(originalStates);
-            window.scrollTo(0, originalScroll);
-            
-            const link = document.createElement('a');
-            link.download = `autosys-${new Date().toISOString().split('T')[0]}.png`;
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-            
-        } catch (error) {
-            console.error('Erreur lors de l\'export PNG:', error);
-            alert('Erreur lors de l\'export PNG: ' + error.message);
-        } finally {
-            this.viewer.hideLoading();
-        }
+            } finally {
+                this.restoreExportState(originalState);
+            }
+        }, 'png');
     }
 
     async exportToPDF() {
-        if (typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-            alert('Fonctionnalité d\'export PDF non disponible - librairies manquantes');
-            return;
-        }
-        
-        if (this.viewer.boxes.size === 0) {
-            alert('Veuillez charger un fichier JIL avant d\'exporter');
-            return;
-        }
-        
+        return this.withExportProgress(async () => {
+            const errors = this.validateExportPrerequisites();
+            if (errors.length > 0) {
+                throw new Error(errors.join(', '));
+            }
+
+            if (!this.validateLibrary('pdf')) {
+                throw new Error('Fonctionnalité PDF non disponible - librairies manquantes');
+            }
+
+            const originalState = this.saveExportState();
+            
+            try {
+                this.expandAllForExport();
+                await this.waitForDOMUpdate(1000);
+
+                const treeContainer = document.getElementById('treeContainer');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+
+                const canvas = await this.withTimeout(
+                    window.html2canvas(treeContainer, {
+                        backgroundColor: '#ffffff',
+                        scale: this.exportConfig.pdf.scale,
+                        useCORS: true,
+                        allowTaint: false,
+                        logging: false,
+                        width: treeContainer.scrollWidth,
+                        height: treeContainer.scrollHeight,
+                        scrollX: 0,
+                        scrollY: 0,
+                        windowWidth: treeContainer.scrollWidth,
+                        windowHeight: treeContainer.scrollHeight,
+                        onclone: (clonedDoc, element) => {
+                            this.prepareElementForExport(element);
+                        }
+                    }),
+                    this.exportConfig.pdf.timeout,
+                    'Capture PDF'
+                );
+
+                const imgData = canvas.toDataURL('image/png', this.exportConfig.pdf.quality);
+                this.generatePDFFromImage(pdf, imgData, `autosys-${this.getFormattedDate()}.pdf`);
+                
+            } finally {
+                this.restoreExportState(originalState);
+            }
+        }, 'pdf');
+    }
+
+    async exportToHTML() {
+        return this.withExportProgress(async () => {
+            const errors = this.validateExportPrerequisites();
+            if (errors.length > 0) {
+                throw new Error(errors.join(', '));
+            }
+
+            try {
+                const htmlContent = this.generateHTMLContent();
+                this.downloadHTML(htmlContent, this.generateHTMLFilename());
+            } catch (error) {
+                throw new Error(`Erreur génération HTML: ${error.message}`);
+            }
+        }, 'html');
+    }
+
+    downloadCanvasAsPNG(canvas, filename) {
         try {
-            this.viewer.showLoading();
-            
-            const originalStates = this.saveTreeState();
-            this.expandAllForExport();
-            
-            // attente maj dom
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const treeContainer = document.getElementById('treeContainer');
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png', this.exportConfig.png.quality);
+            link.click();
+        } catch (error) {
+            throw new Error(`Échec du téléchargement PNG: ${error.message}`);
+        }
+    }
+
+    generatePDFFromImage(pdf, imgData, filename) {
+        try {
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
             const margin = 15;
-            
-            const totalHeight = treeContainer.scrollHeight;
-            const scale = 1.5;
-            
-            // capture d'imge
-            const canvas = await window.html2canvas(treeContainer, {
-                backgroundColor: '#ffffff',
-                scale: scale,
-                useCORS: true,
-                allowTaint: false,
-                logging: false,
-                width: treeContainer.scrollWidth,
-                height: totalHeight,
-                scrollX: 0,
-                scrollY: 0,
-                windowWidth: treeContainer.scrollWidth,
-                windowHeight: totalHeight,
-                onclone: function(clonedDoc, element) {
-                    // S'assurer que tout est visible dans le clone
-                    const nodes = element.querySelectorAll('.tree-node');
-                    nodes.forEach(node => {
-                        node.classList.add('expanded');
-                        node.classList.remove('collapsed');
-                        
-                        const children = node.querySelector('.children');
-                        if (children) {
-                            children.style.cssText = `
-                                display: block !important;
-                                max-height: none !important;
-                                opacity: 1 !important;
-                                visibility: visible !important;
-                                height: auto !important;
-                            `;
-                        }
-                    });
-                    
-                    // Forcer le style du conteneur
-                    element.style.cssText = `
-                        width: 100% !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                        display: block !important;
-                        position: relative !important;
-                        top: 0 !important;
-                        left: 0 !important;
-                    `;
-                }
-            });
 
-            const imgData = canvas.toDataURL('image/png', 0.9);
-            
-            const imgWidth = canvas.width / scale;
-            const imgHeight = canvas.height / scale;
-            const ratio = (pageWidth - 2 * margin) / imgWidth;
-            const finalWidth = imgWidth * ratio;
-            const finalHeight = imgHeight * ratio;
-            
-            // calcl le nombre de pages necessaire
+            const imgProps = pdf.getImageProperties(imgData);
+            const ratio = (pageWidth - 2 * margin) / imgProps.width;
+            const finalWidth = imgProps.width * ratio;
+            const finalHeight = imgProps.height * ratio;
+
             const pagesNeeded = Math.ceil(finalHeight / (pageHeight - 20));
-            
             const extractionDate = new Date().toLocaleDateString('fr-FR');
-            
+
             for (let i = 0; i < pagesNeeded; i++) {
-                if (i > 0) {
-                    pdf.addPage();
-                }
+                if (i > 0) pdf.addPage();
                 
                 const yPos = -i * (pageHeight - 20);
-                
                 pdf.addImage({
                     imageData: imgData,
                     format: 'PNG',
@@ -195,25 +379,33 @@ export class ExportManager {
                     width: finalWidth,
                     height: finalHeight
                 });
-                
+
                 pdf.setFontSize(8);
                 pdf.setTextColor(120, 120, 120);
-                
                 const footerText = `${i + 1}/${pagesNeeded} - ${extractionDate}`;
                 const textWidth = pdf.getTextWidth(footerText);
-                const textX = pageWidth - margin - textWidth;
-                
-                pdf.text(footerText, textX, pageHeight - 5);
+                pdf.text(footerText, pageWidth - margin - textWidth, pageHeight - 5);
             }
-            
-            this.restoreTreeState(originalStates);
-            pdf.save(`autosys-${new Date().toISOString().split('T')[0]}.pdf`);
-            
+
+            pdf.save(filename);
         } catch (error) {
-            console.error('Erreur détaillée lors de l\'export PDF:', error);
-            alert('Erreur lors de l\'export PDF: ' + error.message);
-        } finally {
-            this.viewer.hideLoading();
+            throw new Error(`Génération PDF échouée: ${error.message}`);
+        }
+    }
+
+    downloadHTML(htmlContent, filename) {
+        try {
+            const blob = new Blob([htmlContent], { type: 'text/html; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = url;
+            link.click();
+            
+            // nettoyage la memoire
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } catch (error) {
+            throw new Error(`Échec téléchargement HTML: ${error.message}`);
         }
     }
 
@@ -238,6 +430,7 @@ export class ExportManager {
                 node.classList.remove('collapsed');
             }
         });
+        
         document.querySelectorAll('.children').forEach(container => {
             container.style.cssText = `
                 display: block !important;
@@ -248,142 +441,95 @@ export class ExportManager {
             `;
         });
         
+        // reflow forcé
         document.body.offsetHeight;
     }
 
-    exportToHTML() {
-        if (this.viewer.boxes.size === 0) {
-            alert('Veuillez charger un fichier JIL avant d\'exporter');
-            return;
+    restoreTreeState(states) {
+        states.forEach((state, node) => {
+            if (node.parentNode) {
+                node.classList.toggle('expanded', state.expanded);
+                node.classList.toggle('collapsed', state.collapsed);
+                
+                const children = node.querySelector('.children');
+                if (children) {
+                    children.style.cssText = '';
+                }
+            }
+        });
+    }
+
+    extractApplicationName() {
+        for (const [jobName, job] of this.viewer.boxes) {
+            if (job.attributes?.application) {
+                return job.attributes.application;
+            }
+            if (job.attributes?.APPLICATION) {
+                return job.attributes.APPLICATION;
+            }
         }
+        return null;
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    getFormattedDate() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    generateHTMLFilename() {
+        const appName = this.extractApplicationName();
+        const baseName = appName ? appName.replace(/[^a-zA-Z0-9]/g, '-') : 'export';
+        return `autosys-${baseName}-${this.getFormattedDate()}.html`;
+    }
+
+    generateHTMLContent() {
+        const applicationName = this.extractApplicationName();
+        const displayAppName = applicationName ? `APPLICATION: ${applicationName}` : 'APPLICATION: Non spécifiée';
         
-        try {
-            const applicationName = this.extractApplicationName();
-            const displayAppName = applicationName ? `APPLICATION: ${applicationName}` : 'APPLICATION: Non spécifiée';
-            let htmlContent = `
+        let htmlContent = `
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${applicationName}</title>
+    <title>${applicationName || 'Export Autosys'}</title>
+    <meta name="generator" content="JIL Viewer">
+    <meta name="created" content="${new Date().toISOString()}">
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f5f7fa; 
-            color: #2c3e50;
-            line-height: 1.4;
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            padding: 30px; 
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-        }
-        .header { 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 20px; 
-            margin-bottom: 30px; 
-        }
-        .tree-node { 
-            margin: 8px 0; 
-            border-left: 3px solid #bdc3c7; 
-            padding-left: 15px;
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-        .tree-node-header { 
-            padding: 12px 15px; 
-            background: #ecf0f1; 
-            border-radius: 8px; 
-            display: flex; 
-            flex-direction: column;
-            gap: 8px;
-        }
-        .job-header-main {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .job-name { 
-            font-weight: 600; 
-            font-size: 16px;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; color: #2c3e50; line-height: 1.4; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 30px; overflow-wrap: break-word; }
+        .header { border-bottom: 2px solid #3498db; padding-bottom: 20px; margin-bottom: 30px; }
+        .tree-node { margin: 8px 0; border-left: 3px solid #bdc3c7; padding-left: 15px; page-break-inside: avoid; }
+        .tree-node-header { padding: 12px 15px; background: #ecf0f1; border-radius: 8px; display: flex; flex-direction: column; gap: 8px; }
+        .job-header-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .job-name { font-weight: 600; font-size: 16px; word-break: break-word; }
         .job-type-BOX .job-name { color: #e74c3c; }
         .job-type-CMD .job-name { color: #27ae60; }
         .job-type-FT .job-name { color: #2980b9; }
-        .job-type {
-            font-size: 12px;
-            color: #7f8c8d;
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-            white-space: nowrap;
-        }
-        .job-description {
-            font-size: 14px;
-            color: #5a6c7d;
-            font-style: italic;
-            padding: 8px 0 0 0;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            border-top: 1px dashed #bdc3c7;
-            margin-top: 8px;
-        }
-        .icon {
-            font-size: 16px;
-            min-width: 20px;
-            text-align: center;
-        }
-        .children { 
-            margin-left: 25px; 
-            border-left: 2px dashed #bdc3c7; 
-            padding-left: 15px; 
-        }
-        @media print {
-            body { 
-                padding: 10px; 
-                background: white;
-            }
-            .container { 
-                box-shadow: none; 
-                border-radius: 0;
-                padding: 15px;
-            }
-            .tree-node {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-        }
+        .job-type { font-size: 12px; color: #7f8c8d; background: #f8f9fa; padding: 2px 6px; border-radius: 4px; border: 1px solid #dee2e6; }
+        .job-description { font-size: 14px; color: #5a6c7d; font-style: italic; padding: 8px 0 0 0; border-top: 1px dashed #bdc3c7; margin-top: 8px; }
+        .icon { font-size: 16px; min-width: 20px; text-align: center; }
+        .children { margin-left: 25px; border-left: 2px dashed #bdc3c7; padding-left: 15px; }
+        @media print { body { padding: 10px; background: white; } .container { box-shadow: none; border-radius: 0; padding: 15px; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Boites Autosys de l'application: ${applicationName}</h1>
-            <div>Export généré le ${new Date().toLocaleDateString()}</div>
-        </div>
-        <!--h2>Arborescence avec Ordre Logique</h2-->`;
+            <h1>Boites Autosys de l'application: ${applicationName || 'Non spécifiée'}</h1>
+            <div>Export généré le ${new Date().toLocaleDateString('fr-FR')} • ${this.viewer.boxes.size} jobs</div>
+        </div>`;
 
-            const generateTreeHTML = (box, level = 0) => {
-                const icon = box.type === 'BOX' ? '📦' : box.type === 'CMD' ? '⚡' : '📁';
-                
-                let html = `
+        const generateTreeHTML = (box, level = 0) => {
+            const icon = box.type === 'BOX' ? '📦' : box.type === 'CMD' ? '⚡' : '📁';
+            
+            let html = `
                 <div class="tree-node job-type-${box.type}" style="margin-left: ${level * 25}px;">
                     <div class="tree-node-header">
                         <div class="job-header-main">
@@ -396,93 +542,45 @@ export class ExportManager {
                             ${this.escapeHtml(box.description)}
                         </div>
                         ` : ''}
-                    </div>
-                `;
+                    </div>`;
 
-                if (box.children && box.children.length > 0) {
-                    html += '<div class="children">';
-                    box.children.forEach(child => {
-                        html += generateTreeHTML(child, level + 1);
-                    });
-                    html += '</div>';
-                }
-
+            if (box.children && box.children.length > 0) {
+                html += '<div class="children">';
+                box.children.forEach(child => {
+                    html += generateTreeHTML(child, level + 1);
+                });
                 html += '</div>';
-                return html;
-            };
+            }
 
-            this.viewer.rootBoxes.forEach(box => {
-                htmlContent += generateTreeHTML(box);
-            });
+            html += '</div>';
+            return html;
+        };
 
-            htmlContent += `
+        this.viewer.rootBoxes.forEach(box => {
+            htmlContent += generateTreeHTML(box);
+        });
+
+        htmlContent += `
     </div>
 </body>
 </html>`;
 
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const link = document.createElement('a');
-            link.download = `jil-viewer-${applicationName ? applicationName.replace(/[^a-zA-Z0-9]/g, '-') : 'export'}-${new Date().toISOString().split('T')[0]}.html`;
-            link.href = URL.createObjectURL(blob);
-            link.click();
-            URL.revokeObjectURL(link.href);
-            
-        } catch (error) {
-            console.error('Erreur lors de l\'export HTML:', error);
-            alert('Erreur lors de l\'export HTML: ' + error.message);
-        }
+        return htmlContent;
     }
-
-    extractApplicationName() {
-        for (const [jobName, job] of this.viewer.boxes) {
-            if (job.attributes && job.attributes.application) {
-                return job.attributes.application;
-            }
-        }
-        
-        // sinon cherch "APPLICATION" (en majuscules)
-        for (const [jobName, job] of this.viewer.boxes) {
-            if (job.attributes && job.attributes.APPLICATION) {
-                return job.attributes.APPLICATION;
-            }
-        }
-        
-        return null;
-    }
-
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    restoreTreeState(states) {
-        states.forEach((state, node) => {
-            node.classList.toggle('expanded', state.expanded);
-            node.classList.toggle('collapsed', state.collapsed);
-            
-            const children = node.querySelector('.children');
-            if (children) {
-                children.style.cssText = '';
-            }
-        });
-    }
-
-    // NOUVELLES MÉTHODES POUR L'EXPORT DE SOUS-ARBRE
 
     exportSubtree(job) {
         try {
+            if (this.isExporting) {
+                alert('Un export est déjà en cours. Veuillez patienter.');
+                return;
+            }
+
             console.log(`Export du sous-arbre: ${job.name}`);
-            
-            // Créer une structure temporaire avec seulement ce job et ses enfants
             const subtree = this.extractSubtree(job);
-            
-            // Proposer les différents formats d'export
             this.showExportSubtreeModal(subtree, job.name);
             
         } catch (error) {
-            console.error('Erreur lors de l\'export du sous-arbre:', error);
-            alert('Erreur lors de l\'export: ' + error.message);
+            this.handleExportError('sous-arbre', error, 'Erreur lors de la préparation de l\'export');
         }
     }
 
@@ -495,7 +593,6 @@ export class ExportManager {
             children: []
         };
         
-        // Fonction récursive pour extraire tous les enfants
         const extractChildren = (parentJob, parentNode) => {
             if (parentJob.children && parentJob.children.length > 0) {
                 parentJob.children.forEach(child => {
@@ -517,14 +614,13 @@ export class ExportManager {
     }
 
     showExportSubtreeModal(subtree, jobName) {
-        // Créer une modal pour choisir le format d'export
         const modal = document.createElement('div');
         modal.className = 'modal-overlay';
         modal.innerHTML = `
             <div class="modal-content export-modal">
                 <div class="modal-header">
                     <h3><i class="fas fa-download"></i> Exporter "${jobName}"</h3>
-                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                    <button class="modal-close" id="modalCloseBtn">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -549,21 +645,21 @@ export class ExportManager {
         `;
         
         document.body.appendChild(modal);
-        
-        // Gérer les clics sur les options d'export
+
+        const closeBtn = modal.querySelector('#modalCloseBtn');
+        closeBtn.addEventListener('click', () => modal.remove());
+
         modal.querySelectorAll('.btn-export-option').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 const format = btn.getAttribute('data-format');
-                this.executeSubtreeExport(subtree, jobName, format);
                 modal.remove();
+                this.executeSubtreeExport(subtree, jobName, format);
             });
         });
-        
-        // Fermer la modal en cliquant à l'extérieur
+
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
+            if (e.target === modal) modal.remove();
         });
     }
 
@@ -581,374 +677,45 @@ export class ExportManager {
         return count;
     }
 
-executeSubtreeExport(subtree, jobName, format) {
-    this.viewer.showLoading();
-    
-    const exportPromise = (() => {
-        switch (format) {
-            case 'png':
-                return this.exportSubtreeToPNG(subtree, jobName);
-            case 'pdf':
-                return this.exportSubtreeToPDF(subtree, jobName);
-            case 'html':
-                return Promise.resolve(this.exportSubtreeToHTML(subtree, jobName));
-            default:
-                return Promise.reject(new Error('Format non supporté'));
-        }
-    })();
-    
-    exportPromise
-        .then(() => {
-            this.viewer.hideLoading();
-        })
-        .catch(error => {
-            console.error(`Erreur lors de l'export ${format}:`, error);
-            alert(`Erreur lors de l'export ${format}: ${error.message}`);
-            this.viewer.hideLoading();
-        });
-}
-
-exportSubtreeToPNG(subtree, jobName) {
-    // Sauvegarder l'état actuel
-    const originalRootBoxes = this.viewer.rootBoxes;
-    const originalBoxes = this.viewer.boxes;
-    const originalFilteredBoxes = this.viewer.filteredBoxes;
-    
-    return new Promise((resolve, reject) => {
-        try {
-            // Remplacer temporairement l'arborescence par le sous-arbre
-            this.viewer.rootBoxes = [subtree];
-            this.viewer.boxes = new Map();
-            this.viewer.filteredBoxes = new Map();
-            this.populateBoxesMap(subtree);
+    executeSubtreeExport(subtree, jobName, format) {
+        const exportOperation = async () => {
+            const originalState = this.saveExportState();
             
-            // Forcer le rendu de l'arborescence
-            this.viewer.treeRenderer.renderTree([subtree]);
-            this.viewer.treeRenderer.expandAll();
-            
-            // Attendre que le DOM soit mis à jour
-            setTimeout(() => {
-                this.forceRedraw().then(() => {
-                    this.captureSubtreePNG(subtree, jobName, originalRootBoxes, originalBoxes, originalFilteredBoxes)
-                        .then(resolve)
-                        .catch(reject);
-                });
-            }, 1000);
-            
-        } catch (error) {
-            this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-            reject(error);
-        }
-    });
-}
-
-forceRedraw() {
-    return new Promise(resolve => {
-        // Forcer un reflow pour s'assurer que le rendu est complet
-        const treeContainer = document.getElementById('treeContainer');
-        treeContainer.style.display = 'none';
-        treeContainer.offsetHeight; // Force reflow
-        treeContainer.style.display = 'block';
-        
-        setTimeout(resolve, 100);
-    });
-}
-
-captureSubtreePNG(subtree, jobName, originalRootBoxes, originalBoxes, originalFilteredBoxes) {
-    return new Promise((resolve, reject) => {
-        const treeContainer = document.getElementById('treeContainer');
-        
-        if (typeof window.html2canvas === 'undefined') {
-            this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-            reject(new Error('html2canvas non disponible'));
-            return;
-        }
-
-        // Options optimisées pour html2canvas
-        const options = {
-            backgroundColor: '#ffffff',
-            scale: 2,
-            useCORS: true,
-            allowTaint: false,
-            logging: true,
-            width: treeContainer.scrollWidth,
-            height: treeContainer.scrollHeight,
-            scrollX: 0,
-            scrollY: 0,
-            windowWidth: treeContainer.scrollWidth,
-            windowHeight: treeContainer.scrollHeight,
-            onclone: function(clonedDoc, element) {
-                // S'assurer que tout est déplié et visible
-                const nodes = element.querySelectorAll('.tree-node');
-                nodes.forEach(node => {
-                    node.classList.add('expanded');
-                    node.classList.remove('collapsed');
-                    
-                    const children = node.querySelector('.children');
-                    if (children) {
-                        children.style.cssText = `
-                            display: block !important;
-                            max-height: none !important;
-                            opacity: 1 !important;
-                            visibility: visible !important;
-                            height: auto !important;
-                            overflow: visible !important;
-                        `;
-                    }
-                });
+            try {
+                // arborescence temp
+                this.viewer.rootBoxes = [subtree];
+                this.viewer.boxes = new Map();
+                this.viewer.filteredBoxes = new Map();
+                this.populateBoxesMap(subtree);
                 
-                // Forcer le style du conteneur
-                element.style.cssText = `
-                    width: 100% !important;
-                    height: auto !important;
-                    overflow: visible !important;
-                    display: block !important;
-                    position: relative !important;
-                    background: white !important;
-                `;
+                // forcer le rendu
+                this.viewer.treeRenderer.renderTree([subtree]);
+                this.viewer.treeRenderer.expandAll();
+                await this.waitForDOMUpdate(1000);
+
+                // export
+                switch (format) {
+                    case 'png':
+                        await this.exportToPNG();
+                        break;
+                    case 'pdf':
+                        await this.exportToPDF();
+                        break;
+                    case 'html':
+                        await this.exportToHTML();
+                        break;
+                    default:
+                        throw new Error(`Format non supporté: ${format}`);
+                }
+                
+            } finally {
+                this.restoreExportState(originalState);
             }
         };
 
-        window.html2canvas(treeContainer, options)
-            .then(canvas => {
-                try {
-                    const link = document.createElement('a');
-                    link.download = `autosys-${jobName}-${new Date().toISOString().split('T')[0]}.png`;
-                    link.href = canvas.toDataURL('image/png', 1.0);
-                    link.click();
-                    
-                    // Restaurer l'état original
-                    this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-                    resolve();
-                } catch (error) {
-                    this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-                    reject(error);
-                }
-            })
-            .catch(error => {
-                this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-                reject(error);
-            });
-    });
-}
-
-    exportSubtreeToPDF(subtree, jobName) {
-        // Sauvegarder l'état actuel
-        const originalRootBoxes = this.viewer.rootBoxes;
-        const originalBoxes = this.viewer.boxes;
-        const originalFilteredBoxes = this.viewer.filteredBoxes;
-        
-        try {
-            // Remplacer temporairement l'arborescence par le sous-arbre
-            this.viewer.rootBoxes = [subtree];
-            this.viewer.boxes = new Map();
-            this.viewer.filteredBoxes = new Map();
-            this.populateBoxesMap(subtree);
-            
-            // Forcer le rendu de l'arborescence
-            this.viewer.treeRenderer.renderTree([subtree]);
-            this.viewer.treeRenderer.expandAll();
-            
-            // Attendre le rendu puis exporter
-            setTimeout(() => {
-                if (typeof window.html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
-                    this.exportToPDF(); // Utiliser la méthode PDF existante
-                    
-                    // Restaurer l'état original après un délai
-                    setTimeout(() => {
-                        this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-                    }, 2000);
-                } else {
-                    alert('Fonctionnalité PDF non disponible');
-                    this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-                }
-            }, 1000);
-            
-        } catch (error) {
-            // Restaurer en cas d'erreur
-            this.restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes);
-            throw error;
-        }
-    }
-
-    exportSubtreeToHTML(subtree, jobName) {
-        const htmlContent = this.generateSubtreeHTML(subtree, jobName);
-        const blob = new Blob([htmlContent], { type: 'text/html' });
-        const link = document.createElement('a');
-        link.download = `autosys-${jobName}-${new Date().toISOString().split('T')[0]}.html`;
-        link.href = URL.createObjectURL(blob);
-        link.click();
-        URL.revokeObjectURL(link.href);
-    }
-
-    restoreOriginalState(originalRootBoxes, originalBoxes, originalFilteredBoxes) {
-        this.viewer.rootBoxes = originalRootBoxes;
-        this.viewer.boxes = originalBoxes;
-        this.viewer.filteredBoxes = originalFilteredBoxes;
-        this.viewer.treeRenderer.renderTree(originalRootBoxes);
-    }
-
-    generateSubtreeHTML(subtree, jobName) {
-        const jobCount = this.countSubtreeJobs(subtree) + 1; // +1 pour le job racine
-        
-        let htmlContent = `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autosys - ${jobName}</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f5f7fa; 
-            color: #2c3e50;
-            line-height: 1.4;
-        }
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: white; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-            padding: 30px; 
-            overflow-wrap: break-word;
-            word-wrap: break-word;
-        }
-        .header { 
-            border-bottom: 2px solid #3498db; 
-            padding-bottom: 20px; 
-            margin-bottom: 30px; 
-        }
-        .tree-node { 
-            margin: 8px 0; 
-            border-left: 3px solid #bdc3c7; 
-            padding-left: 15px;
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-        .tree-node-header { 
-            padding: 12px 15px; 
-            background: #ecf0f1; 
-            border-radius: 8px; 
-            display: flex; 
-            flex-direction: column;
-            gap: 8px;
-        }
-        .job-header-main {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .job-name { 
-            font-weight: 600; 
-            font-size: 16px;
-            word-break: break-word;
-            overflow-wrap: break-word;
-        }
-        .job-type-BOX .job-name { color: #e74c3c; }
-        .job-type-CMD .job-name { color: #27ae60; }
-        .job-type-FT .job-name { color: #2980b9; }
-        .job-type {
-            font-size: 12px;
-            color: #7f8c8d;
-            background: #f8f9fa;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #dee2e6;
-            white-space: nowrap;
-        }
-        .job-description {
-            font-size: 14px;
-            color: #5a6c7d;
-            font-style: italic;
-            padding: 8px 0 0 0;
-            word-break: break-word;
-            overflow-wrap: break-word;
-            border-top: 1px dashed #bdc3c7;
-            margin-top: 8px;
-        }
-        .icon {
-            font-size: 16px;
-            min-width: 20px;
-            text-align: center;
-        }
-        .children { 
-            margin-left: 25px; 
-            border-left: 2px dashed #bdc3c7; 
-            padding-left: 15px; 
-        }
-        @media print {
-            body { 
-                padding: 10px; 
-                background: white;
-            }
-            .container { 
-                box-shadow: none; 
-                border-radius: 0;
-                padding: 15px;
-            }
-            .tree-node {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Job Autosys: ${jobName}</h1>
-            <div>Export généré le ${new Date().toLocaleDateString()} • ${jobCount} job${jobCount > 1 ? 's' : ''}</div>
-        </div>
-`;
-
-        const generateTreeHTML = (box, level = 0) => {
-            const icon = box.type === 'BOX' ? '📦' : box.type === 'CMD' ? '⚡' : '📁';
-            
-            let html = `
-            <div class="tree-node job-type-${box.type}" style="margin-left: ${level * 25}px;">
-                <div class="tree-node-header">
-                    <div class="job-header-main">
-                        <span class="icon">${icon}</span>
-                        <span class="job-name">${this.escapeHtml(box.name)}</span>
-                        <span class="job-type">${box.type}</span>
-                    </div>
-                    ${box.description ? `
-                    <div class="job-description">
-                        ${this.escapeHtml(box.description)}
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-
-            if (box.children && box.children.length > 0) {
-                html += '<div class="children">';
-                box.children.forEach(child => {
-                    html += generateTreeHTML(child, level + 1);
-                });
-                html += '</div>';
-            }
-
-            html += '</div>';
-            return html;
-        };
-
-        htmlContent += generateTreeHTML(subtree);
-        htmlContent += `
-    </div>
-</body>
-</html>`;
-
-        return htmlContent;
+        exportOperation().catch(error => {
+            this.handleExportError(format, error, `Erreur lors de l'export ${format.toUpperCase()} du sous-arbre`);
+        });
     }
 
     populateBoxesMap(node) {

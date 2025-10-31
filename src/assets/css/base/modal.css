@@ -248,3 +248,37 @@
     background: var(--border-color);
     margin: 5px 0;
 }
+
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideOutRight {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.export-progress-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--accent-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    animation: slideInRight 0.3s ease;
+}
+
+.export-progress-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.export-progress-content i {
+    font-size: 16px;
+}
