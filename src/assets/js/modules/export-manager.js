@@ -93,7 +93,7 @@ export class ExportManager {
     waitForDOMUpdate(delay = null) {
         const actualDelay = delay || this.calculateOptimalDelay();
         return new Promise(resolve => {
-            // Forcer un reflow pour s'assurer que le DOM est à jour
+            // force un reflow pour ==> DOM est à jour
             document.body.offsetHeight;
             setTimeout(resolve, actualDelay);
         });
@@ -229,7 +229,6 @@ export class ExportManager {
 
     async exportToPNG() {
         return this.withExportProgress(async () => {
-            // Validation
             const errors = this.validateExportPrerequisites();
             if (errors.length > 0) {
                 throw new Error(errors.join(', '));

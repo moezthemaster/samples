@@ -11,7 +11,7 @@ export class EventManager {
         this.setupModalEvents();
         this.setupComparisonEvents();
         this.setupNewUploadSystem();
-        this.setupAdvancedFilters(); // NOUVEAU
+        this.setupAdvancedFilters();
         console.log('Tous les événements initialisés');
     }
 
@@ -26,13 +26,11 @@ export class EventManager {
             return;
         }
     
-        // Clic sur la zone de drop
         singleDropZone.addEventListener('click', () => {
             console.log('Zone d\'upload cliquée');
             singleFileInput.click();
         });
     
-        // Gestion de la sélection de fichier
         singleFileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 console.log('Fichier sélectionné:', e.target.files[0].name);
@@ -40,7 +38,6 @@ export class EventManager {
             }
         });
     
-        // Drag & drop
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             singleDropZone.addEventListener(eventName, (e) => {
                 e.preventDefault();
@@ -83,7 +80,6 @@ export class EventManager {
     setupComparisonEvents() {
         console.log('Configuration des événements de comparaison');
         
-        // Événements pour le toggle de mode
         const modeSingle = document.getElementById('modeSingle');
         const modeCompare = document.getElementById('modeCompare');
         
@@ -106,7 +102,6 @@ export class EventManager {
             });
         }
 
-        // Configuration des zones de drop pour la comparaison
         this.setupComparisonDropZones();
         
         console.log('Événements de comparaison configurés');
@@ -146,13 +141,11 @@ export class EventManager {
     }
 
     setupComparisonDropZone(dropZone, fileInput, side) {
-        // Clic pour sélectionner un fichier
         dropZone.addEventListener('click', () => {
             console.log(`Zone ${side} cliquée`);
             fileInput.click();
         });
 
-        // Gestion de la sélection de fichier
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
                 console.log(`Fichier sélectionné pour ${side}:`, e.target.files[0].name);
@@ -160,7 +153,6 @@ export class EventManager {
             }
         });
 
-        // Drag and drop
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, (e) => {
                 e.preventDefault();
@@ -206,7 +198,6 @@ export class EventManager {
         const searchFilter = document.getElementById('searchFilter');
         
         if (searchFilter) {
-            // Recherche optimisée
             searchFilter.addEventListener('input', async (e) => {
                 const searchTerm = e.target.value;
                 console.log('Recherche optimisée déclenchée:', searchTerm);
@@ -218,7 +209,6 @@ export class EventManager {
                 }
             });
 
-            // Indicateur visuel pendant la recherche
             searchFilter.addEventListener('input', (e) => {
                 const searchContainer = e.target.closest('.search-input');
                 if (e.target.value.trim() !== '') {
@@ -231,7 +221,7 @@ export class EventManager {
                 }
             });
 
-            // Raccourci clavier Ctrl+F
+            // raccourci Ctrl+F
             document.addEventListener('keydown', (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                     e.preventDefault();
@@ -240,7 +230,7 @@ export class EventManager {
                 }
             });
 
-            // Échap pour effacer la recherche
+            // Echap pour effacer
             searchFilter.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     e.target.value = '';
@@ -250,33 +240,22 @@ export class EventManager {
         }
     }
 
-    /**
-     * NOUVEAU : Configuration des filtres avancés
-     */
     setupAdvancedFilters() {
         console.log('Configuration des filtres avancés');
         
-        // Créer l'interface des filtres avancés
         this.createAdvancedFiltersUI();
         
-        // Filtres rapides par type
         this.setupQuickTypeFilters();
         
-        // Filtres avancés
         this.setupAdvancedFilterControls();
         
-        // Bouton reset
         this.setupResetFilter();
     }
 
-    /**
-     * Crée l'interface des filtres avancés
-     */
     createAdvancedFiltersUI() {
         const filtersSection = document.querySelector('.filters-section');
         if (!filtersSection) return;
 
-        // Ajouter les filtres rapides
         const quickFiltersHTML = `
             <div class="filter-group">
                 <label>Filtres rapides:</label>
@@ -294,7 +273,6 @@ export class EventManager {
             </div>
         `;
 
-        // Ajouter les filtres avancés
         const advancedFiltersHTML = `
             <div class="filter-group advanced-filters">
                 <label>
@@ -329,16 +307,12 @@ export class EventManager {
             </div>
         `;
 
-        // Insérer après la recherche
         const searchGroup = filtersSection.querySelector('.filter-group');
         if (searchGroup) {
             searchGroup.insertAdjacentHTML('afterend', quickFiltersHTML + advancedFiltersHTML);
         }
     }
 
-    /**
-     * Configure les filtres rapides par type
-     */
     setupQuickTypeFilters() {
         const typeButtons = document.querySelectorAll('.filter-type-btn');
         
@@ -351,11 +325,7 @@ export class EventManager {
         });
     }
 
-    /**
-     * Configure les contrôles des filtres avancés
-     */
     setupAdvancedFilterControls() {
-        // Toggle des filtres avancés
         const toggleBtn = document.querySelector('.toggle-advanced');
         const advancedContent = document.querySelector('.advanced-filters-content');
         
@@ -366,7 +336,6 @@ export class EventManager {
             });
         }
 
-        // Filtres avancés
         const advancedFilters = document.querySelectorAll('.advanced-filter input');
         advancedFilters.forEach(input => {
             input.addEventListener('change', (e) => {
@@ -378,9 +347,6 @@ export class EventManager {
         });
     }
 
-    /**
-     * Configure le bouton reset
-     */
     setupResetFilter() {
         const resetBtn = document.querySelector('.btn-reset-filters');
         if (resetBtn) {
@@ -488,7 +454,6 @@ export class EventManager {
             });
         }
 
-        // Fermer la modal en cliquant à l'extérieur
         if (aboutModal) {
             aboutModal.addEventListener('click', (e) => {
                 if (e.target === aboutModal) {

@@ -14,7 +14,6 @@ renderComparisonTree(filterType = null) {
     
     let jobsToShow = [];
     
-    // Appliquer le filtre si spécifié
     if (filterType) {
         switch (filterType) {
             case 'new':

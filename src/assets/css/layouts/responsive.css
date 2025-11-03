@@ -164,6 +164,15 @@
         flex-direction: row;
         overflow-x: auto;
     }
+    .search-stats-breakdown {
+        justify-content: center;
+    }
+    
+    .search-stats-main {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+    }
     .upload-section,
     .filters-section,
     .export-section {
@@ -208,6 +217,15 @@
     }
     .details-panel .empty-details i {
         font-size: 2rem;
+    }
+        .quick-filters {
+        flex-direction: column;
+    }
+    .filter-type-btn {
+        justify-content: center;
+    }
+    .active-filters {
+        justify-content: center;
     }
 }
 

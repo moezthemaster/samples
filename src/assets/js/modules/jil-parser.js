@@ -176,7 +176,7 @@ extractDependencies(job, condition) {
     patterns.forEach(pattern => {
         let match;
         while ((match = pattern.exec(condition)) !== null) {
-            const dependentJob = match[2] || match[1]; // Prendre le job référencé
+            const dependentJob = match[2] || match[1]; // prendre le job rde ref
             
             if (dependentJob && !job.dependsOn.includes(dependentJob)) {
                 job.dependsOn.push(dependentJob);
@@ -244,7 +244,7 @@ calculateExecutionOrder() {
     }
 
     buildDependencyGraph() {
-        console.log('=== CONSTRUCTION DU GRAPHE DE DÉPENDANCES ===');
+        console.log('CONSTRUCTION DU GRAPHE DE DÉPENDANCES');
         
         for (const [jobName, job] of this.boxes) {
             job.dependsOn.forEach(depName => {

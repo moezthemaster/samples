@@ -2,6 +2,7 @@ export class SearchEngine {
     constructor(viewer) {
         this.viewer = viewer;
         this.searchIndex = new Map();
+        this.attributeKeysIndex = new Set();
         this.cache = new Map();
         this.debounceTimeout = null;
         this.isIndexing = false;
@@ -9,7 +10,6 @@ export class SearchEngine {
         this.searchHistory = [];
         this.suggestions = new Set();
         
-        // Configuration
         this.config = {
             debounceDelay: 300,
             cacheSize: 100,
@@ -17,30 +17,32 @@ export class SearchEngine {
             highlightMatches: true,
             maxHistory: 20,
             maxSuggestions: 10,
-            enableFuzzySearch: true,
+            enableFuzzySearch: false,
             fuzzyThreshold: 0.7
         };
     }
 
-    /**
-     * Indexation précalculée de tous les jobs
-     */
     buildSearchIndex() {
         console.time('BuildSearchIndex');
         this.isIndexing = true;
         this.searchIndex.clear();
+        this.attributeKeysIndex.clear();
         this.suggestions.clear();
         
         for (const [jobName, job] of this.viewer.boxes) {
             const indexEntry = {
                 job,
                 searchableText: this.extractSearchableText(job),
-                keywords: this.extractKeywords(job)
+                keywords: this.extractKeywords(job),
+                attributes: this.extractAttributesForSearch(job)
             };
             
             this.searchIndex.set(jobName, indexEntry);
             
-            // Ajouter aux suggestions
+            Object.keys(job.attributes).forEach(key => {
+                this.attributeKeysIndex.add(key.toLowerCase());
+            });
+            
             this.addToSuggestions(job.name);
             if (job.description) {
                 this.addToSuggestions(job.description);
@@ -49,125 +51,19 @@ export class SearchEngine {
         
         this.isIndexing = false;
         console.timeEnd('BuildSearchIndex');
-        console.log(`Index construit: ${this.searchIndex.size} jobs indexés, ${this.suggestions.size} suggestions`);
+        console.log(`Index construit: ${this.searchIndex.size} jobs, ${this.attributeKeysIndex.size} clés d'attributs`);
     }
 
-    /**
-     * Extrait tout le texte recherchable d'un job
-     */
-/**
- * Extrait tout le texte recherchable d'un job - VERSION COMPLÈTE
- */
-extractSearchableText(job) {
-    // Inclure TOUS les attributs systématiquement avec leur clé et valeur
-    const attributeText = Object.entries(job.attributes)
-        .map(([key, value]) => {
-            // Convertir en string et nettoyer
-            const stringValue = String(value).trim();
-            // Retourner à la fois "clé:valeur" et "valeur" pour les recherches partielles
-            return `${key} ${stringValue} ${key}:${stringValue}`;
-        })
-        .join(' ');
-
-    const texts = [
-        job.name,
-        job.description || '',
-        job.type,
-        attributeText, // ← TOUS les attributs inclus ici
-        ...job.dependsOn,
-        ...job.requiredBy,
-        job.parent || '' // Ajouter aussi le parent si disponible
-    ];
-    
-    // Filtrer les valeurs vides et joindre
-    return texts
-        .filter(text => text && text.trim() !== '')
-        .join(' ')
-        .toLowerCase()
-        .trim();
-}
-
-    /**
-     * Extrait les mots-clés pour une recherche plus rapide
-     */
-    extractKeywords(job) {
-        const text = this.extractSearchableText(job);
-        const words = text.split(/\s+/).filter(word => word.length > 2);
-        return [...new Set(words)]; // Déduplication
-    }
-
-    /**
-     * Ajoute un terme aux suggestions
-     */
-    addToSuggestions(term) {
-        if (!term || term.length < 3) return;
-        
-        const words = term.split(/\s+/);
-        words.forEach(word => {
-            if (word.length >= 3) {
-                this.suggestions.add(word.toLowerCase());
-            }
+    extractAttributesForSearch(job) {
+        const attributes = {};
+        Object.entries(job.attributes).forEach(([key, value]) => {
+            const normalizedKey = key.toLowerCase();
+            const stringValue = String(value).toLowerCase();
+            attributes[normalizedKey] = stringValue;
         });
+        return attributes;
     }
 
-    /**
-     * Recherche avec surlignage avancé
-     */
-    async searchWithHighlight(searchTerm) {
-        this.currentSearchTerm = searchTerm;
-        
-        if (this.isIndexing) {
-            await this.waitForIndexing();
-        }
-
-        // Ajouter à l'historique
-        if (searchTerm.trim() && !this.searchHistory.includes(searchTerm)) {
-            this.searchHistory.unshift(searchTerm);
-            if (this.searchHistory.length > this.config.maxHistory) {
-                this.searchHistory.pop();
-            }
-        }
-
-        // Gestion du debounce
-        if (this.debounceTimeout) {
-            clearTimeout(this.debounceTimeout);
-        }
-
-        return new Promise((resolve) => {
-            this.debounceTimeout = setTimeout(async () => {
-                const results = await this.executeSearch(searchTerm);
-                resolve(results);
-            }, this.config.debounceDelay);
-        });
-    }
-
-    /**
-     * Exécute la recherche réelle avec cache
-     */
-    async executeSearch(searchTerm) {
-        const cacheKey = searchTerm.toLowerCase().trim();
-        
-        // Vérifier le cache
-        if (this.cache.has(cacheKey)) {
-            console.log('Résultat servi depuis le cache');
-            return this.cache.get(cacheKey);
-        }
-
-        const results = this.performSearch(searchTerm);
-        
-        // Mettre en cache (avec limite de taille)
-        if (this.cache.size >= this.config.cacheSize) {
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-        this.cache.set(cacheKey, results);
-
-        return results;
-    }
-
-    /**
-     * Algorithme de recherche optimisé avec recherche floue
-     */
     performSearch(searchTerm) {
         if (!searchTerm || searchTerm.trim() === '') {
             return {
@@ -181,263 +77,384 @@ extractSearchableText(job) {
         }
 
         const startTime = performance.now();
-        const term = searchTerm.toLowerCase().trim();
-        const exactMatches = [];
-        const partialMatches = [];
-        const fuzzyMatches = [];
+        const term = searchTerm.trim();
+        
+        if (term.includes('=') || term.includes(':')) {
+            return this.performAttributeSearch(term, startTime);
+        }
+        
+        if (this.attributeKeysIndex.has(term.toLowerCase())) {
+            return this.performAttributeKeySearch(term, startTime);
+        }
+        
+        return this.performTextSearch(term, startTime);
+    }
 
-        // Détecter le type de recherche
-        const searchType = this.detectSearchType(searchTerm);
-
+    performAttributeSearch(searchTerm, startTime) {
+        const normalizedTerm = searchTerm.replace(':', '=');
+        const [key, value] = normalizedTerm.split('=').map(part => part.trim());
+        
+        if (!key || !value) {
+            return this.performTextSearch(searchTerm, startTime);
+        }
+        
+        const normalizedKey = key.toLowerCase();
+        
+        let actualValue = value;
+        let isWildcard = false;
+        
+        if (value.startsWith('*') && value.endsWith('*')) {
+            actualValue = value.slice(1, -1).toLowerCase();
+            isWildcard = true;
+        } else if (value.startsWith('*')) {
+            actualValue = value.slice(1).toLowerCase();
+            isWildcard = 'end';
+        } else if (value.endsWith('*')) {
+            actualValue = value.slice(0, -1).toLowerCase();
+            isWildcard = 'start';
+        } else {
+            actualValue = value.toLowerCase();
+        }
+        
+        const matches = [];
+        
         for (const [jobName, indexEntry] of this.searchIndex) {
-            const searchText = indexEntry.searchableText;
+            if (!indexEntry.attributes.hasOwnProperty(normalizedKey)) {
+                continue;
+            }
             
-            // Recherche exacte
-            if (searchText.includes(term)) {
-                exactMatches.push(indexEntry.job);
-                continue;
+            const jobValue = indexEntry.attributes[normalizedKey];
+            
+            let isMatch = false;
+            
+            if (isWildcard === true) {
+                // recherche  *value*
+                isMatch = jobValue.includes(actualValue);
+            } else if (isWildcard === 'start') {
+                // recherche suffixe *value
+                isMatch = jobValue.endsWith(actualValue);
+            } else if (isWildcard === 'end') {
+                // recherche préfixe value*
+                isMatch = jobValue.startsWith(actualValue);
+            } else {
+                // recherche exacte
+                isMatch = jobValue === actualValue;
             }
-
-            // Recherche partielle par mots-clés
-            const hasPartialMatch = indexEntry.keywords.some(keyword => 
-                keyword.includes(term) || term.includes(keyword)
-            );
-
-            if (hasPartialMatch) {
-                partialMatches.push(indexEntry.job);
-                continue;
-            }
-
-            // Recherche floue (optionnelle)
-            if (this.config.enableFuzzySearch && term.length > 2) {
-                const fuzzyScore = this.calculateFuzzyScore(jobName, term);
-                if (fuzzyScore >= this.config.fuzzyThreshold) {
-                    fuzzyMatches.push({
-                        job: indexEntry.job,
-                        score: fuzzyScore
-                    });
-                }
+            
+            if (isMatch) {
+                matches.push(indexEntry.job);
             }
         }
-
-        // Trier les résultats flous par score
-        fuzzyMatches.sort((a, b) => b.score - a.score);
-        const sortedFuzzyMatches = fuzzyMatches.map(item => item.job);
-
-        const searchTime = performance.now() - startTime;
-        const allMatches = [...exactMatches, ...partialMatches, ...sortedFuzzyMatches];
         
-        console.log(`Recherche "${term}" (${searchType}): ${exactMatches.length} exacts, ${partialMatches.length} partiels, ${fuzzyMatches.length} flous en ${searchTime.toFixed(2)}ms`);
+        const searchTime = performance.now() - startTime;
+        console.log(`Recherche attribut "${searchTerm}": ${matches.length} résultats en ${searchTime.toFixed(2)}ms`);
 
         return {
-            exactMatches,
-            partialMatches,
-            fuzzyMatches: sortedFuzzyMatches,
-            allMatches,
-            searchTime,
-            searchType
+            exactMatches: matches,
+            partialMatches: [],
+            fuzzyMatches: [],
+            allMatches: matches,
+            searchTime: searchTime,
+            searchType: 'attribute'
         };
     }
 
-    /**
-     * Détecte le type de recherche (simple, avancée, par attribut)
-     */
-    detectSearchType(searchTerm) {
-        const term = searchTerm.toLowerCase();
+    performAttributeKeySearch(searchTerm, startTime) {
+        const normalizedKey = searchTerm.toLowerCase();
+        const matches = [];
         
-        // Recherche par attribut (ex: "machine:server1")
-        if (term.includes(':')) {
-            return 'attribute';
-        }
-        
-        // Recherche avec opérateurs (AND, OR, NOT)
-        if (term.includes(' and ') || term.includes(' or ') || term.includes(' not ')) {
-            return 'advanced';
-        }
-        
-        // Recherche par wildcard
-        if (term.includes('*') || term.includes('?')) {
-            return 'wildcard';
-        }
-        
-        return 'simple';
-    }
-
-    /**
-     * Calcule un score de similarité floue
-     */
-    calculateFuzzyScore(text, searchTerm) {
-        const str = text.toLowerCase();
-        const term = searchTerm.toLowerCase();
-        
-        if (str === term) return 1.0;
-        if (str.includes(term)) return 0.9;
-        
-        // Algorithme de similarité simple (Jaro-Winkler simplifié)
-        let matches = 0;
-        let transpositions = 0;
-        const maxDistance = Math.max(str.length, term.length) / 2 - 1;
-        
-        for (let i = 0; i < str.length; i++) {
-            const char = str[i];
-            const start = Math.max(0, i - maxDistance);
-            const end = Math.min(i + maxDistance + 1, term.length);
-            
-            for (let j = start; j < end; j++) {
-                if (term[j] === char) {
-                    matches++;
-                    if (i !== j) transpositions++;
-                    break;
-                }
+        for (const [jobName, indexEntry] of this.searchIndex) {
+            if (indexEntry.attributes.hasOwnProperty(normalizedKey)) {
+                matches.push(indexEntry.job);
             }
         }
         
-        if (matches === 0) return 0.0;
-        
-        transpositions = transpositions / 2;
-        const similarity = (matches / str.length + matches / term.length + (matches - transpositions) / matches) / 3;
-        
-        return Math.min(similarity, 1.0);
+        const searchTime = performance.now() - startTime;
+        console.log(`Recherche clé "${searchTerm}": ${matches.length} résultats en ${searchTime.toFixed(2)}ms`);
+
+        return {
+            exactMatches: matches,
+            partialMatches: [],
+            fuzzyMatches: [],
+            allMatches: matches,
+            searchTime: searchTime,
+            searchType: 'attribute_key'
+        };
     }
 
-    /**
-     * Obtient les suggestions de recherche
-     */
-    getSuggestions(searchTerm, maxResults = this.config.maxSuggestions) {
-        if (!searchTerm || searchTerm.length < 2) {
-            return Array.from(this.suggestions).slice(0, maxResults);
-        }
-        
+    performTextSearch(searchTerm, startTime) {
         const term = searchTerm.toLowerCase();
-        const matchedSuggestions = [];
+        const matches = [];
+
+        let isWildcard = false;
+        let actualValue = term;
         
-        // Suggestions exactes
-        for (const suggestion of this.suggestions) {
-            if (suggestion.includes(term)) {
-                matchedSuggestions.push(suggestion);
-                if (matchedSuggestions.length >= maxResults) break;
+        if (term.startsWith('*') && term.endsWith('*')) {
+            actualValue = term.slice(1, -1);
+            isWildcard = true;
+        } else if (term.startsWith('*')) {
+            actualValue = term.slice(1);
+            isWildcard = 'end';
+        } else if (term.endsWith('*')) {
+            actualValue = term.slice(0, -1);
+            isWildcard = 'start';
+        }
+
+        for (const [jobName, indexEntry] of this.searchIndex) {
+            const searchText = indexEntry.searchableText;
+            let isMatch = false;
+            
+            if (isWildcard === true) {
+
+                isMatch = searchText.includes(actualValue);
+            } else if (isWildcard === 'start') {
+                isMatch = searchText.endsWith(actualValue);
+            } else if (isWildcard === 'end') {
+                isMatch = searchText.startsWith(actualValue);
+            } else {
+                isMatch = searchText.includes(term);
+            }
+            
+            if (isMatch) {
+                matches.push(indexEntry.job);
             }
         }
         
-        // Suggestions floues si pas assez de résultats
-        if (matchedSuggestions.length < maxResults && this.config.enableFuzzySearch) {
-            const fuzzySuggestions = [];
-            
-            for (const suggestion of this.suggestions) {
-                if (matchedSuggestions.includes(suggestion)) continue;
-                
-                const score = this.calculateFuzzyScore(suggestion, term);
-                if (score >= this.config.fuzzyThreshold * 0.8) {
-                    fuzzySuggestions.push({ suggestion, score });
-                }
-            }
-            
-            fuzzySuggestions.sort((a, b) => b.score - a.score);
-            fuzzySuggestions.slice(0, maxResults - matchedSuggestions.length)
-                .forEach(item => matchedSuggestions.push(item.suggestion));
-        }
-        
-        return matchedSuggestions.slice(0, maxResults);
+        const searchTime = performance.now() - startTime;
+        const searchType = isWildcard ? 'wildcard' : 'text';
+        console.log(`Recherche ${searchType} "${searchTerm}": ${matches.length} résultats en ${searchTime.toFixed(2)}ms`);
+
+        return {
+            exactMatches: matches,
+            partialMatches: [],
+            fuzzyMatches: [],
+            allMatches: matches,
+            searchTime: searchTime,
+            searchType: searchType
+        };
     }
 
-    /**
-     * Obtient l'historique de recherche
-     */
-    getSearchHistory(maxItems = this.config.maxHistory) {
-        return this.searchHistory.slice(0, maxItems);
-    }
-
-    /**
-     * Efface l'historique de recherche
-     */
-    clearSearchHistory() {
-        this.searchHistory = [];
-    }
-
-    /**
-     * Génère les données de surlignage pour l'affichage
-     */
     generateHighlightData(job, searchTerm) {
         if (!searchTerm || !this.config.highlightMatches) {
             return null;
         }
 
+        const term = searchTerm.trim();
+        
+        if (term.includes('=') || term.includes(':')) {
+            const normalizedTerm = term.replace(':', '=');
+            const [key, value] = normalizedTerm.split('=').map(part => part.trim());
+            
+            if (!key || !value) {
+                return this.generateTextHighlight(job, searchTerm, true); // true = forcer surlignage nom
+            }
+            
+            const normalizedKey = key.toLowerCase();
+            
+            let actualValue = value;
+            let isWildcard = false;
+            
+            if (value.startsWith('*') && value.endsWith('*')) {
+                actualValue = value.slice(1, -1);
+                isWildcard = true;
+            } else if (value.startsWith('*')) {
+                actualValue = value.slice(1);
+                isWildcard = 'end';
+            } else if (value.endsWith('*')) {
+                actualValue = value.slice(0, -1);
+                isWildcard = 'start';
+            }
+            
+            const highlights = {
+                name: job.name,
+                description: job.description,
+                attributes: {}
+            };
+            
+            const attributeValue = job.attributes[normalizedKey];
+            const hasMatchingAttribute = attributeValue && this.checkAttributeMatch(String(attributeValue), actualValue, isWildcard);
+            
+            if (hasMatchingAttribute) {
+                highlights.name = `<mark class="search-highlight">${job.name}</mark>`;
+                highlights.attributes[normalizedKey] = this.highlightText(String(attributeValue), actualValue);
+            }
+            
+            return highlights;
+        }
+        
+        if (this.attributeKeysIndex.has(term.toLowerCase())) {
+            const highlights = {
+                name: job.name,
+                description: job.description,
+                attributes: {}
+            };
+            
+            const hasAttributeKey = Object.keys(job.attributes).some(key => 
+                key.toLowerCase() === term.toLowerCase()
+            );
+            
+            if (hasAttributeKey) {
+                highlights.name = this.highlightText(job.name, term);
+                
+                Object.entries(job.attributes).forEach(([key, value]) => {
+                    if (key.toLowerCase() === term.toLowerCase()) {
+                        highlights.attributes[key] = this.highlightText(String(value), '');
+                    }
+                });
+            }
+            
+            return highlights;
+        }
+        
+        return this.generateTextHighlight(job, searchTerm, true);
+    }
+
+    checkAttributeMatch(attributeValue, searchValue, isWildcard) {
+        const attrValueLower = attributeValue.toLowerCase();
+        const searchLower = searchValue.toLowerCase();
+        
+        if (isWildcard === true) {
+            return attrValueLower.includes(searchLower);
+        } else if (isWildcard === 'start') {
+            return attrValueLower.endsWith(searchLower);
+        } else if (isWildcard === 'end') {
+            return attrValueLower.startsWith(searchLower);
+        } else {
+            return attrValueLower === searchLower;
+        }
+    }
+
+    generateTextHighlight(job, searchTerm) {
         const term = searchTerm.toLowerCase();
+
+        let isWildcard = false;
+        let actualValue = term;
+
+        if (term.startsWith('*') && term.endsWith('*')) {
+            actualValue = term.slice(1, -1);
+            isWildcard = true;
+        } else if (term.startsWith('*')) {
+            actualValue = term.slice(1);
+            isWildcard = 'end';
+        } else if (term.endsWith('*')) {
+            actualValue = term.slice(0, -1);
+            isWildcard = 'start';
+        }
+
         const highlights = {
-            name: this.highlightText(job.name, term),
-            description: job.description ? this.highlightText(job.description, term) : null,
+            name: job.name,
+            description: job.description,
             attributes: {}
         };
 
-        // Surligner les attributs correspondants
+        const shouldHighlight = (text) => {
+            if (!text) return false;
+            const textLower = text.toLowerCase();
+
+            if (isWildcard === true) {
+                return textLower.includes(actualValue);
+            } else if (isWildcard === 'start') {
+                return textLower.endsWith(actualValue);
+            } else if (isWildcard === 'end') {
+                return textLower.startsWith(actualValue);
+            } else {
+                return textLower.includes(term);
+            }
+        };
+
+        const hasAnyMatch = 
+            shouldHighlight(job.name) ||
+            (job.description && shouldHighlight(job.description)) ||
+            Object.values(job.attributes).some(value => shouldHighlight(String(value)));
+
+        if (hasAnyMatch) {
+            highlights.name = `<mark class="search-highlight">${job.name}</mark>`;
+        }
+
+        if (job.description && shouldHighlight(job.description)) {
+            const highlightTerm = isWildcard ? actualValue : searchTerm;
+            highlights.description = this.highlightText(job.description, highlightTerm);
+        }
+
         Object.entries(job.attributes).forEach(([key, value]) => {
-            const stringValue = String(value).toLowerCase();
-            if (stringValue.includes(term)) {
-                highlights.attributes[key] = this.highlightText(String(value), term);
+            const stringValue = String(value);
+            if (shouldHighlight(stringValue)) {
+                const highlightTerm = isWildcard ? actualValue : searchTerm;
+                highlights.attributes[key] = this.highlightText(stringValue, highlightTerm);
             }
         });
 
         return highlights;
     }
 
-    /**
-     * Applique le surlignage à un texte
-     */
     highlightText(text, searchTerm) {
-        if (!text || !searchTerm) return text;
+        if (!text || !searchTerm || searchTerm.trim() === '') {
+            return text;
+        }
 
-        const regex = new RegExp(`(${this.escapeRegex(searchTerm)})`, 'gi');
-        return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        try {
+            const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        } catch (error) {
+            console.warn('Erreur surlignage:', error);
+            return text;
+        }
     }
 
-    /**
-     * Échappe les caractères spéciaux pour les regex
-     */
-    escapeRegex(string) {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    extractSearchableText(job) {
+        const attributeText = Object.entries(job.attributes)
+            .map(([key, value]) => {
+                const stringValue = String(value).trim();
+                return `${key} ${stringValue} ${key}:${stringValue}`;
+            })
+            .join(' ');
+
+        const texts = [
+            job.name,
+            job.description || '',
+            job.type,
+            attributeText,
+            ...job.dependsOn,
+            ...job.requiredBy,
+            job.parent || ''
+        ];
+        
+        return texts
+            .filter(text => text && text.trim() !== '')
+            .join(' ')
+            .toLowerCase()
+            .trim();
     }
 
-    /**
-     * Obtient les statistiques détaillées par type
-     */
-    getResultsByType(results) {
-        const byType = {
-            BOX: { count: 0, jobs: [] },
-            CMD: { count: 0, jobs: [] },
-            FT: { count: 0, jobs: [] },
-            UNKNOWN: { count: 0, jobs: [] }
-        };
+    extractKeywords(job) {
+        const text = this.extractSearchableText(job);
+        const words = text.split(/\s+/).filter(word => word.length > 2);
+        return [...new Set(words)];
+    }
 
-        results.allMatches.forEach(job => {
-            const type = job.type || 'UNKNOWN';
-            if (byType[type]) {
-                byType[type].count++;
-                byType[type].jobs.push(job);
+    addToSuggestions(term) {
+        if (!term || term.length < 3) return;
+        
+        const words = term.split(/\s+/);
+        words.forEach(word => {
+            if (word.length >= 3) {
+                this.suggestions.add(word.toLowerCase());
             }
         });
-
-        return byType;
     }
 
-    /**
-     * Attend que l'indexation soit terminée
-     */
-    async waitForIndexing() {
-        return new Promise((resolve) => {
-            const checkInterval = setInterval(() => {
-                if (!this.isIndexing) {
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 50);
-        });
+    getSearchHistory(maxItems = this.config.maxHistory) {
+        return this.searchHistory.slice(0, maxItems);
     }
 
-    /**
-     * Réinitialise l'index (après chargement nouveau fichier)
-     */
+    clearSearchHistory() {
+        this.searchHistory = [];
+    }
+
     reset() {
         this.searchIndex.clear();
+        this.attributeKeysIndex.clear();
         this.cache.clear();
         this.suggestions.clear();
         this.searchHistory = [];
@@ -445,24 +462,5 @@ extractSearchableText(job) {
             clearTimeout(this.debounceTimeout);
             this.debounceTimeout = null;
         }
-    }
-
-    /**
-     * Statistiques de performance
-     */
-    getStats() {
-        return {
-            indexedJobs: this.searchIndex.size,
-            cacheSize: this.cache.size,
-            cacheHitRate: this.calculateCacheHitRate(),
-            suggestionsCount: this.suggestions.size,
-            searchHistoryCount: this.searchHistory.length,
-            isIndexing: this.isIndexing
-        };
-    }
-
-    calculateCacheHitRate() {
-        // À implémenter avec des métriques réelles
-        return 0;
     }
 }

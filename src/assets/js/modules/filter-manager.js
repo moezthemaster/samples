@@ -16,15 +16,11 @@ export class FilterManager {
         this.maxHistorySize = 10;
     }
 
-    /**
-     * Applique tous les filtres actifs
-     */
     applyAllFilters() {
         const startTime = performance.now();
         
         let filteredJobs = Array.from(this.viewer.boxes.values());
         
-        // Appliquer les filtres dans l'ordre
         filteredJobs = this.applyTextFilter(filteredJobs);
         filteredJobs = this.applyJobTypeFilter(filteredJobs);
         filteredJobs = this.applyAttributeFilters(filteredJobs);
@@ -41,40 +37,23 @@ export class FilterManager {
         };
     }
 
-    /**
-     * Filtre par texte (recherche)
-     */
     applyTextFilter(jobs) {
-        const searchTerm = this.activeFilters.textSearch.toLowerCase().trim();
+        const searchTerm = this.activeFilters.textSearch.trim();
         
         if (!searchTerm) return jobs;
         
-        return jobs.filter(job => {
-            const searchableText = [
-                job.name,
-                job.description || '',
-                job.type,
-                ...Object.values(job.attributes).map(val => String(val)),
-                ...job.dependsOn,
-                ...job.requiredBy
-            ].join(' ').toLowerCase();
-            
-            return searchableText.includes(searchTerm);
-        });
+        const searchResults = this.viewer.searchEngine.performSearch(searchTerm);
+        const matchingJobNames = new Set(searchResults.allMatches.map(job => job.name));
+        
+        return jobs.filter(job => matchingJobNames.has(job.name));
     }
 
-    /**
-     * Filtre par type de job
-     */
     applyJobTypeFilter(jobs) {
         if (this.activeFilters.jobTypes.size === 0) return jobs;
         
         return jobs.filter(job => this.activeFilters.jobTypes.has(job.type));
     }
 
-    /**
-     * Filtre par attributs
-     */
     applyAttributeFilters(jobs) {
         if (this.activeFilters.attributes.size === 0) return jobs;
         
@@ -94,26 +73,20 @@ export class FilterManager {
         });
     }
 
-    /**
-     * Filtres avancés (dépendances, enfants, conditions)
-     */
     applyAdvancedFilters(jobs) {
         const { hasDependencies, hasChildren, hasConditions } = this.activeFilters.advanced;
         
         return jobs.filter(job => {
-            // Filtre dépendances
             if (hasDependencies !== null) {
                 const hasDeps = job.dependsOn.length > 0 || job.requiredBy.length > 0;
                 if (hasDependencies !== hasDeps) return false;
             }
             
-            // Filtre enfants
             if (hasChildren !== null) {
                 const hasKids = job.children && job.children.length > 0;
                 if (hasChildren !== hasKids) return false;
             }
             
-            // Filtre conditions
             if (hasConditions !== null) {
                 const hasCond = !!job.attributes.condition;
                 if (hasConditions !== hasCond) return false;
@@ -123,9 +96,6 @@ export class FilterManager {
         });
     }
 
-    /**
-     * Gestion des filtres par type
-     */
     toggleJobTypeFilter(jobType) {
         if (this.activeFilters.jobTypes.has(jobType)) {
             this.activeFilters.jobTypes.delete(jobType);
@@ -136,9 +106,6 @@ export class FilterManager {
         return this.applyAllFilters();
     }
 
-    /**
-     * Gestion des filtres par attributs
-     */
     setAttributeFilter(attribute, value) {
         if (!value || value.trim() === '') {
             this.activeFilters.attributes.delete(attribute);
@@ -149,9 +116,6 @@ export class FilterManager {
         return this.applyAllFilters();
     }
 
-    /**
-     * Gestion des filtres avancés
-     */
     setAdvancedFilter(filterName, value) {
         if (this.activeFilters.advanced.hasOwnProperty(filterName)) {
             this.activeFilters.advanced[filterName] = value;
@@ -161,18 +125,12 @@ export class FilterManager {
         return { jobs: Array.from(this.viewer.boxes.values()), filterTime: 0, activeFilterCount: 0 };
     }
 
-    /**
-     * Définit la recherche texte
-     */
     setTextFilter(text) {
         this.activeFilters.textSearch = text;
         this.saveToHistory();
         return this.applyAllFilters();
     }
 
-    /**
-     * Réinitialise tous les filtres
-     */
     resetAllFilters() {
         this.activeFilters = {
             jobTypes: new Set(),
@@ -188,9 +146,6 @@ export class FilterManager {
         return this.applyAllFilters();
     }
 
-    /**
-     * Réinitialise un type de filtre spécifique
-     */
     resetFilterType(type) {
         switch (type) {
             case 'jobTypes':
@@ -214,9 +169,6 @@ export class FilterManager {
         return this.applyAllFilters();
     }
 
-    /**
-     * Historique des filtres
-     */
     saveToHistory() {
         const filterSnapshot = JSON.parse(JSON.stringify({
             jobTypes: Array.from(this.activeFilters.jobTypes),
@@ -227,15 +179,11 @@ export class FilterManager {
         
         this.filterHistory.unshift(filterSnapshot);
         
-        // Limiter la taille de l'historique
         if (this.filterHistory.length > this.maxHistorySize) {
             this.filterHistory.pop();
         }
     }
 
-    /**
-     * Restaure un filtre depuis l'historique
-     */
     restoreFromHistory(index) {
         if (index >= 0 && index < this.filterHistory.length) {
             const snapshot = this.filterHistory[index];
@@ -250,9 +198,6 @@ export class FilterManager {
         return { jobs: Array.from(this.viewer.boxes.values()), filterTime: 0, activeFilterCount: 0 };
     }
 
-    /**
-     * Compte le nombre de filtres actifs
-     */
     getActiveFilterCount() {
         let count = 0;
         
@@ -267,9 +212,6 @@ export class FilterManager {
         return count;
     }
 
-    /**
-     * Obtient les statistiques des filtres
-     */
     getFilterStats() {
         const totalJobs = this.viewer.boxes.size;
         const commonAttributes = this.getCommonAttributes();
@@ -283,9 +225,6 @@ export class FilterManager {
         };
     }
 
-    /**
-     * Distribution des types de jobs
-     */
     getJobTypeDistribution() {
         const distribution = { BOX: 0, CMD: 0, FT: 0, UNKNOWN: 0 };
         
@@ -299,9 +238,6 @@ export class FilterManager {
         return distribution;
     }
 
-    /**
-     * Attributs les plus communs
-     */
     getCommonAttributes() {
         const attributeCount = new Map();
         
@@ -313,12 +249,9 @@ export class FilterManager {
         
         return Array.from(attributeCount.entries())
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 10); // Top 10
+            .slice(0, 10);
     }
 
-    /**
-     * Exporte la configuration des filtres
-     */
     exportFilters() {
         return {
             activeFilters: this.activeFilters,
@@ -327,9 +260,6 @@ export class FilterManager {
         };
     }
 
-    /**
-     * Importe une configuration de filtres
-     */
     importFilters(config) {
         if (config.activeFilters) {
             this.activeFilters.jobTypes = new Set(config.activeFilters.jobTypes || []);

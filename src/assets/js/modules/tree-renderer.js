@@ -42,9 +42,6 @@ export class TreeRenderer {
         }
     }
 
-    /**
-     * Rendu de l'arbre avec surlignage
-     */
     renderTree(rootBoxes = this.viewer.rootBoxes, jobsWithHighlights = []) {
         const container = document.getElementById('treeContainer');
         container.innerHTML = '';
@@ -54,7 +51,6 @@ export class TreeRenderer {
             return;
         }
 
-        // NOUVEAU : Créer une map des surlignages pour accès rapide
         const highlightsMap = new Map();
         jobsWithHighlights.forEach(job => {
             if (job.highlights) {
@@ -78,14 +74,11 @@ export class TreeRenderer {
         `;
     }
 
-    /**
-     * Crée un nœud d'arbre avec surlignage
-     */
     createTreeNode(box, highlightsMap = new Map()) {
         const node = document.createElement('div');
         node.classList.add('tree-node', 'job-type-' + box.type);
         node.draggable = true;
-
+        
         const header = document.createElement('div');
         header.className = 'tree-node-header';
         
@@ -106,55 +99,71 @@ export class TreeRenderer {
         if (box.type === 'BOX') {
             boxIndicator = ' <i class="fas fa-cube box-indicator" title="Box contenant d\'autres jobs"></i>';
         }
-
-        // NOUVEAU : Appliquer le surlignage si disponible
+    
         const highlights = highlightsMap.get(box.name);
-        const displayName = highlights?.name || box.name;
-        const displayDescription = highlights?.description || box.description;
-
-        header.innerHTML = `
-            <i class="${this.getIconForType(box.type)}"></i>
-            <span class="job-name">${displayName}</span>
-        `;
-
-        header.addEventListener('click', (e) => {
-            e.stopPropagation();
-            node.classList.toggle('expanded');
-            node.classList.toggle('collapsed');
-            this.viewer.selectJob(box);
-            this.hideContextMenu();
-        });
-
-        header.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.showContextMenu(e, node, box);
-        });
-
-        node.appendChild(header);
-
-        if (box.children && box.children.length > 0) {
-            const childrenContainer = document.createElement('div');
-            childrenContainer.classList.add('children');
+        let displayName = box.name;
+        
+        if (highlights?.name) {
+            displayName = highlights.name;
+        } else if (searchTerm) {
+            const hasMatchingAttribute = Object.values(box.attributes).some(value => 
+                String(value).toLowerCase().includes(searchTerm)
+            );
+            const hasMatchingDescription = box.description && box.description.toLowerCase().includes(searchTerm);
             
-            box.children.forEach(child => {
-                const childNode = this.createTreeNode(child, highlightsMap);
-                childrenContainer.appendChild(childNode);
-            });
-            
-            node.appendChild(childrenContainer);
-            node.classList.add('collapsed');
-        }
+            if (hasMatchingAttribute || hasMatchingDescription) {
+                displayName = box.name.replace(
+                    new RegExp(searchTerm, 'gi'), 
+                    '<mark class="search-highlight">$&</mark>'
+                );
+            }
+    }
 
-        return node;
+    header.innerHTML = `
+        <i class="${this.getIconForType(box.type)}"></i>
+        <span class="job-name">${displayName}</span>
+    `;
+
+    header.addEventListener('click', (e) => {
+        e.stopPropagation();
+        node.classList.toggle('expanded');
+        node.classList.toggle('collapsed');
+        this.viewer.selectJob(box);
+        this.hideContextMenu();let displayName = box.name;
+    });
+
+    header.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.showContextMenu(e, node, box);
+    });
+
+    node.appendChild(header);
+
+    if (box.children && box.children.length > 0) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.classList.add('children');
+        
+        box.children.forEach(child => {
+            const childNode = this.createTreeNode(child, highlightsMap);
+            childrenContainer.appendChild(childNode);
+        });
+        
+        node.appendChild(childrenContainer);
+        node.classList.add('collapsed');
+    }
+
+    return node;
     }
 
     showContextMenu(e, node, box) {
         this.currentNode = node;
         this.currentJob = box;
         
-        this.contextMenu.style.left = e.pageX + 'px';
-        this.contextMenu.style.top = e.pageY + 'px';
+        //this.contextMenu.style.left = e.pageX + 'px';
+        //this.contextMenu.style.top = e.pageY + 'px';
+        this.contextMenu.style.left = e.clientX + 'px';
+        this.contextMenu.style.top = e.clientY + 'px';
         this.contextMenu.classList.remove('hidden');
         
         this.updateContextMenuOptions(box);
@@ -183,7 +192,6 @@ export class TreeRenderer {
             collapseItem.classList.add('disabled');
         }
         
-        // L'export est toujours disponible, même pour les jobs sans enfants
         exportItem.classList.remove('disabled');
     }
 
@@ -246,14 +254,13 @@ export class TreeRenderer {
         document.querySelectorAll('.tree-node.selected').forEach(item => {
             item.classList.remove('selected');
         });
-
+    
         const allNodes = document.querySelectorAll('.tree-node');
         let targetNode = null;
         
         for (let node of allNodes) {
             const jobNameElement = node.querySelector('.job-name');
             if (jobNameElement) {
-                // Extraire le nom du job sans les icônes
                 const jobNameText = jobNameElement.textContent.replace(/📦|⚡|📁/g, '').trim();
                 if (jobNameText === job.name) {
                     targetNode = node;
@@ -261,9 +268,48 @@ export class TreeRenderer {
                 }
             }
         }
-
+    
         if (targetNode) {
             targetNode.classList.add('selected');
+            
+            const searchTerm = document.getElementById('searchFilter').value.toLowerCase().trim();
+            if (searchTerm) {
+                this.forceHighlightJobName(targetNode, job, searchTerm);
+            }
+        }
+    }
+
+    forceHighlightJobName(node, job, searchTerm) {
+        const jobNameElement = node.querySelector('.job-name');
+        if (!jobNameElement) return;
+
+        if (job.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+            return;
+        }
+
+        const hasMatchingAttribute = Object.entries(job.attributes).some(([key, value]) => {
+            const stringValue = String(value).toLowerCase();
+            return stringValue.includes(searchTerm.toLowerCase());
+        });
+
+        const hasMatchingDescription = job.description && 
+            job.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+        if (hasMatchingAttribute || hasMatchingDescription) {
+            const highlightedName = this.highlightText(job.name, searchTerm);
+            jobNameElement.innerHTML = highlightedName;
+        }
+    }
+
+    highlightText(text, searchTerm) {
+        if (!text || !searchTerm) return text;
+
+        try {
+            const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        } catch (error) {
+            return text;
         }
     }
 

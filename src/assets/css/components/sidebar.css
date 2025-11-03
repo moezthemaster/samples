@@ -173,13 +173,6 @@
     100% { transform: translateY(-50%) rotate(360deg); }
 }
 
-
-
-
-
-
-
-/* Styles pour la recherche avancée */
 .search-highlight {
     background-color: #ffeb3b;
     padding: 2px 4px;
@@ -276,7 +269,6 @@
     color: var(--text-secondary);
 }
 
-/* Loader de recherche */
 .search-loader {
     position: absolute;
     right: 35px;
@@ -312,7 +304,6 @@
     100% { transform: translateY(-50%) rotate(360deg); }
 }
 
-/* Amélioration des nœuds d'arbre */
 .tree-node-header.search-match {
     border-left: 4px solid var(--accent-color);
     background: rgba(52, 152, 219, 0.05);
@@ -335,26 +326,6 @@
     margin-left: 4px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .search-stats-breakdown {
-        justify-content: center;
-    }
-    
-    .search-stats-main {
-        flex-direction: column;
-        gap: 4px;
-        text-align: center;
-    }
-}
-
-
-
-
-
-
-/* CSS PHASE 3 */
-/* Filtres rapides */
 .quick-filters {
     display: flex;
     gap: 8px;
@@ -385,7 +356,6 @@
     border-color: var(--accent-color);
 }
 
-/* Filtres avancés */
 .advanced-filters label {
     cursor: pointer;
     display: flex;
@@ -449,7 +419,6 @@
     background: #dc2626;
 }
 
-/* Filtres actifs */
 .active-filters {
     display: flex;
     flex-wrap: wrap;
@@ -510,19 +479,4 @@
     background: rgba(243, 156, 18, 0.1);
     color: #f39c12;
     border: 1px solid rgba(243, 156, 18, 0.2);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .quick-filters {
-        flex-direction: column;
-    }
-    
-    .filter-type-btn {
-        justify-content: center;
-    }
-    
-    .active-filters {
-        justify-content: center;
-    }
 }

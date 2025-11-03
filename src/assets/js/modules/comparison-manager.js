@@ -15,7 +15,6 @@ export class ComparisonManager {
             const content = await this.readFile(file);
             console.log(`CONTENU ${side} (premières 200 chars):`, content.substring(0, 200));
             
-            // Créer un NOUVEAU parser pour chaque fichier
             const jilParser = new this.viewer.jilParser.constructor();
             const parsingResult = jilParser.parseJILFile(content);
             
@@ -104,7 +103,7 @@ export class ComparisonManager {
             console.log('COMPARAISON TERMINÉE:', this.result);
             
             this.updateComparisonStatus();
-            this.applyFilter('all'); // Afficher tous les jobs par défaut
+            this.applyFilter('all');
             
         } catch (error) {
             console.error('ERREUR lors de la comparaison:', error);
@@ -132,10 +131,10 @@ export class ComparisonManager {
         console.log('TOUS LES JOBS UNIQUES:', Array.from(allJobNames));
 
         const result = {
-            newJobs: [],      // Dans A mais pas dans B
-            deletedJobs: [],  // Dans B mais pas dans A
-            modifiedJobs: [], // Dans les deux mais differents
-            identicalJobs: [], // Identiques
+            newJobs: [],      // dans A mais pas dans B
+            deletedJobs: [],  // dans B mais pas dans A
+            modifiedJobs: [], // dans les deux mais differents
+            identicalJobs: [], // identiques
             jobDetails: new Map()
         };
 
@@ -202,7 +201,7 @@ export class ComparisonManager {
         const differences = [];
         const importantAttributes = ['command', 'machine', 'owner', 'condition', 'description'];
 
-        // Comparer les attributs principaux
+        // comprer les attributs principaux
         importantAttributes.forEach(attr => {
             const valueA = jobA.attributes[attr] || '';
             const valueB = jobB.attributes[attr] || '';
@@ -223,7 +222,7 @@ export class ComparisonManager {
             }
         });
 
-        // Comparer les dépendances
+        // Comparer les deps
         const dependsOnA = jobA.dependsOn.join(', ');
         const dependsOnB = jobB.dependsOn.join(', ');
         
@@ -268,7 +267,6 @@ export class ComparisonManager {
                 </span>
             `;
 
-            // Ajouter les événements de clic
             this.setupFilterBadges();
         }
     }
@@ -280,12 +278,8 @@ export class ComparisonManager {
                 const filterType = badge.getAttribute('data-filter');
                 console.log(`Filtre appliqué: ${filterType}`);
                 
-                // Retirer la classe active de tous les badges
                 filterBadges.forEach(b => b.classList.remove('active'));
-                // Activer le badge cliqué
                 badge.classList.add('active');
-                
-                // Appliquer le filtre
                 this.applyFilter(filterType);
             });
         });
@@ -345,7 +339,7 @@ export class ComparisonManager {
         this.isComparing = false;
         this.currentFilter = 'all';
         
-        // Réinitialiser l'interface
+        // reinit interface
         const startCompare = document.getElementById('startCompare');
         const compareStatus = document.getElementById('compareStatus');
         const fileInfoLeft = document.getElementById('fileInfoLeft');
@@ -364,7 +358,7 @@ export class ComparisonManager {
         return this.result.jobDetails.get(jobName);
     }
 
-    // Méthode utilitaire pour obtenir les jobs selon le filtre actuel
+    // jobs selon filtre
     getFilteredJobs() {
         if (!this.result) return [];
         

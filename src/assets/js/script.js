@@ -30,7 +30,6 @@ class AutosysViewer {
             this.comparisonManager = new ComparisonManager(this);
             this.comparisonRenderer = new ComparisonRenderer(this);
             
-            // Moteurs de recherche et filtres
             this.searchEngine = new SearchEngine(this);
             this.filterManager = new FilterManager(this);
             
@@ -49,8 +48,7 @@ class AutosysViewer {
         const singleMode = document.querySelector('.single-mode');
         const compareMode = document.querySelector('.compare-mode');
         const modeButtons = document.querySelectorAll('.btn-mode');
-        const fileInfo = document.getElementById('fileInfo');
-        const fileStatus = document.getElementById('fileStatus');
+        const fileInfo = document.getElementById('fileStatus');
         
         console.log('UI:', {
             singleMode: !!singleMode,
@@ -111,11 +109,9 @@ class AutosysViewer {
             this.boxes = parsingResult.boxes;
             this.rootBoxes = parsingResult.rootBoxes;
             
-            // Construire l'index de recherche
             console.log('Construction de l\'index de recherche...');
             this.searchEngine.buildSearchIndex();
             
-            // Initialiser les filtres
             this.filterManager.resetAllFilters();
             
             this.applyFilters();
@@ -163,43 +159,33 @@ class AutosysViewer {
             this.comparisonRenderer.renderComparisonTree();
             this.updateComparisonCounter();
         } else {
-            // NOUVEAU : Utiliser le système de filtres avancés
             const filterResults = this.filterManager.applyAllFilters();
-            
             this.applyFilterResults(filterResults);
         }
     }
 
-    /**
-     * Applique les résultats des filtres avancés
-     */
     applyFilterResults(filterResults) {
         this.filteredBoxes.clear();
         
         const { jobs: filteredJobs, filterTime, activeFilterCount } = filterResults;
         
         if (activeFilterCount === 0) {
-            // Aucun filtre - afficher tout
             this.filteredBoxes = new Map(this.boxes);
             const filteredRootBoxes = [...this.rootBoxes];
             this.treeRenderer.renderTree(filteredRootBoxes);
             this.treeRenderer.collapseAll();
         } else {
-            // Appliquer les résultats des filtres
             const boxesToExpand = new Set();
             
-            // Préparer les données de surlignage pour la recherche texte
             const searchTerm = this.filterManager.activeFilters.textSearch;
             const jobsWithHighlights = filteredJobs.map(job => ({
                 ...job,
                 highlights: this.searchEngine.generateHighlightData(job, searchTerm)
             }));
             
-            // Reconstruire l'arborescence filtrée
             const filteredRootBoxes = this.buildFilteredTree(filteredJobs, boxesToExpand);
             this.treeRenderer.renderTree(filteredRootBoxes, jobsWithHighlights);
             
-            // Expansion des branches concernées
             if (searchTerm) {
                 setTimeout(() => {
                     this.treeRenderer.expandMatchingBoxes(boxesToExpand);
@@ -208,14 +194,9 @@ class AutosysViewer {
         }
         
         this.updateJobCounter();
-        
-        // Afficher les stats détaillées
         this.displayAdvancedFilterStats(filterResults);
     }
 
-    /**
-     * Construit l'arborescence filtrée en gardant la hiérarchie
-     */
     buildFilteredTree(matchingJobs, boxesToExpand) {
         const jobSet = new Set(matchingJobs.map(job => job.name));
         const filteredRootBoxes = [];
@@ -230,7 +211,6 @@ class AutosysViewer {
                     if (filteredChild) {
                         filteredChildren.push(filteredChild);
                         
-                        // Marquer pour expansion si un enfant match
                         if (jobSet.has(child.name)) {
                             boxesToExpand.add(box.name);
                         }
@@ -267,9 +247,6 @@ class AutosysViewer {
         return filteredRootBoxes;
     }
 
-    /**
-     * Affiche les statistiques avancées des filtres
-     */
     displayAdvancedFilterStats(filterResults) {
         const searchStats = document.getElementById('searchStats') || this.createSearchStatsElement();
         const { activeFilterCount, filterTime } = filterResults;
@@ -288,13 +265,11 @@ class AutosysViewer {
             </div>
         `;
 
-        // Afficher les filtres actifs
         const activeFilters = this.getActiveFiltersDisplay();
         if (activeFilters) {
             statsHTML += `<div class="active-filters">${activeFilters}</div>`;
         }
 
-        // Breakdown par type
         const typeDistribution = filterStats.jobTypeDistribution;
         statsHTML += `<div class="search-stats-breakdown">`;
         
@@ -313,23 +288,25 @@ class AutosysViewer {
         
         statsHTML += `</div>`;
 
+        const searchTerm = this.filterManager.activeFilters.textSearch;
+        if (searchTerm && (searchTerm.includes('=') || searchTerm.includes(':'))) {
+            statsHTML += `<div class="search-syntax-help" title="Syntaxe: owner=toto, owner=*admin*">
+                <i class="fas fa-info-circle"></i> Recherche avancée active
+            </div>`;
+        }
+
         searchStats.innerHTML = statsHTML;
         searchStats.style.display = 'block';
     }
 
-    /**
-     * Obtient l'affichage des filtres actifs
-     */
     getActiveFiltersDisplay() {
         const { activeFilters } = this.filterManager;
         const activeFiltersList = [];
         
-        // Filtre texte
         if (activeFilters.textSearch) {
             activeFiltersList.push(`<span class="active-filter-text">"${activeFilters.textSearch}"</span>`);
         }
         
-        // Filtres type
         if (activeFilters.jobTypes.size > 0) {
             const types = Array.from(activeFilters.jobTypes).map(type => 
                 `<span class="active-filter-type active-filter-${type.toLowerCase()}">${type}</span>`
@@ -337,7 +314,6 @@ class AutosysViewer {
             activeFiltersList.push(types);
         }
         
-        // Filtres attributs
         if (activeFilters.attributes.size > 0) {
             activeFilters.attributes.forEach((values, attr) => {
                 values.forEach(value => {
@@ -348,7 +324,6 @@ class AutosysViewer {
             });
         }
         
-        // Filtres avancés
         Object.entries(activeFilters.advanced).forEach(([key, value]) => {
             if (value !== null) {
                 const label = this.getAdvancedFilterLabel(key, value);
@@ -359,9 +334,6 @@ class AutosysViewer {
         return activeFiltersList.length > 0 ? activeFiltersList.join('') : null;
     }
 
-    /**
-     * Obtient le libellé des filtres avancés
-     */
     getAdvancedFilterLabel(filterKey, value) {
         const labels = {
             hasDependencies: { true: 'Avec dépendances', false: 'Sans dépendances' },
@@ -372,9 +344,6 @@ class AutosysViewer {
         return labels[filterKey] ? labels[filterKey][value] : `${filterKey}: ${value}`;
     }
 
-    /**
-     * Crée l'élément d'affichage des stats avancées
-     */
     createSearchStatsElement() {
         const statsEl = document.createElement('div');
         statsEl.id = 'searchStats';
@@ -388,53 +357,36 @@ class AutosysViewer {
         return statsEl;
     }
 
-    /**
-     * NOUVEAU : Gestion des filtres rapides
-     */
     toggleJobTypeFilter(jobType) {
         const filterResults = this.filterManager.toggleJobTypeFilter(jobType);
         this.applyFilterResults(filterResults);
         this.updateFilterUI();
     }
 
-    /**
-     * NOUVEAU : Définit le filtre texte
-     */
     setTextFilter(text) {
         const filterResults = this.filterManager.setTextFilter(text);
         this.applyFilterResults(filterResults);
         this.updateFilterUI();
     }
 
-    /**
-     * NOUVEAU : Définit un filtre avancé
-     */
     setAdvancedFilter(filterName, value) {
         const filterResults = this.filterManager.setAdvancedFilter(filterName, value);
         this.applyFilterResults(filterResults);
         this.updateFilterUI();
     }
 
-    /**
-     * NOUVEAU : Réinitialise tous les filtres
-     */
     resetAllFilters() {
         const filterResults = this.filterManager.resetAllFilters();
         this.applyFilterResults(filterResults);
         this.updateFilterUI();
         
-        // Réinitialiser l'UI
         const searchFilter = document.getElementById('searchFilter');
         if (searchFilter) {
             searchFilter.value = '';
         }
     }
 
-    /**
-     * NOUVEAU : Met à jour l'interface des filtres
-     */
     updateFilterUI() {
-        // Mettre à jour les boutons de filtre type
         const typeButtons = document.querySelectorAll('.filter-type-btn');
         typeButtons.forEach(btn => {
             const jobType = btn.dataset.jobType;
@@ -445,7 +397,6 @@ class AutosysViewer {
             }
         });
         
-        // Mettre à jour les filtres avancés
         const advancedFilters = document.querySelectorAll('.advanced-filter input');
         advancedFilters.forEach(input => {
             const filterName = input.name;
@@ -518,152 +469,268 @@ class AutosysViewer {
         detailsContent.innerHTML = this.generateJobDetailsHTML(job);
     }
 
-generateJobDetailsHTML(job) {
-    // Récupérer le terme de recherche actuel
-    const searchTerm = document.getElementById('searchFilter').value.toLowerCase().trim();
-    
-    // Fonction pour appliquer le surlignage si recherche active
-    const highlightIfNeeded = (text) => {
-        if (!searchTerm || !text) return text;
+    generateJobDetailsHTML(job) {
+        const searchTerm = document.getElementById('searchFilter').value.toLowerCase().trim();
         
-        // Échapper les caractères spéciaux pour la regex
-        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(${escapedTerm})`, 'gi');
+        // Détection du type de recherche
+        const isAttributeSearch = searchTerm.includes('=') || searchTerm.includes(':');
+        let searchKey = null;
+        let searchValue = null;
         
-        return text.replace(regex, '<mark class="search-highlight">$1</mark>');
-    };
+        if (isAttributeSearch) {
+            const normalizedTerm = searchTerm.replace(':', '=');
+            [searchKey, searchValue] = normalizedTerm.split('=').map(part => part.trim());
+        }
+        
+        const highlightIfNeeded = (text, context = 'general') => {
+            if (!text || !searchTerm) return text;
+            
+            if (isAttributeSearch && searchKey && context !== 'attribute-' + searchKey.toLowerCase()) {
+                return text;
+            }
+            
+            try {
+                let actualSearchTerm = searchTerm;
+                
+                if (isAttributeSearch && searchValue) {
+                    actualSearchTerm = searchValue;
+                }
+                
+                let isWildcard = false;
+                let actualValue = actualSearchTerm;
+                
+                if (actualSearchTerm.startsWith('*') && actualSearchTerm.endsWith('*')) {
+                    actualValue = actualSearchTerm.slice(1, -1);
+                    isWildcard = true;
+                } else if (actualSearchTerm.startsWith('*')) {
+                    actualValue = actualSearchTerm.slice(1);
+                    isWildcard = 'end';
+                } else if (actualSearchTerm.endsWith('*')) {
+                    actualValue = actualSearchTerm.slice(0, -1);
+                    isWildcard = 'start';
+                }
+                
+                const escapedTerm = actualValue.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                
+                if (isWildcard === true) {
+                    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+                    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+                } else if (isWildcard === 'start') {
+                    const regex = new RegExp(`(${escapedTerm})(?=[^]*$)`, 'gi');
+                    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+                } else if (isWildcard === 'end') {
+                    const regex = new RegExp(`(^[^]*?)(${escapedTerm})`, 'gi');
+                    return text.replace(regex, '$1<mark class="search-highlight">$2</mark>');
+                } else {
+                    const regex = new RegExp(`(${escapedTerm})`, 'gi');
+                    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+                }
+            } catch (error) {
+                return text;
+            }
+        };
 
-    // Section des attributs principaux (toujours affichés s'ils existent)
-    const mainSections = [
-        {
-            title: 'Informations générales',
-            icon: 'fa-id-card',
+        const mainSections = [
+            {
+                title: 'Informations générales',
+                icon: 'fa-id-card',
+                items: [
+                    { 
+                        label: 'Nom', 
+                        value: job.name,
+                        context: 'general'
+                    },
+                    { 
+                        label: 'Type', 
+                        value: job.type,
+                        context: 'general'
+                    },
+                    { 
+                        label: 'Description', 
+                        value: job.description || 'Non spécifiée',
+                        context: 'general'
+                    },
+                    { 
+                        label: 'Parent', 
+                        value: job.parent || 'Aucun (Box racine)',
+                        context: 'general'
+                    },
+                    job.children && job.children.length > 0 ? 
+                        { 
+                            label: 'Enfants', 
+                            value: `${job.children.length} job(s)`,
+                            context: 'general'
+                        } : null
+                ].filter(Boolean)
+            },
+            job.attributes.command ? {
+                title: 'Commande',
+                icon: 'fa-terminal',
+                items: [
+                    { 
+                        label: 'Commande', 
+                        value: job.attributes.command,
+                        context: 'attribute-command'
+                    }
+                ]
+            } : null,
+            job.attributes.machine ? {
+                title: 'Machine',
+                icon: 'fa-server',
+                items: [
+                    { 
+                        label: 'Machine', 
+                        value: job.attributes.machine,
+                        context: 'attribute-machine'
+                    }
+                ]
+            } : null,
+            job.attributes.owner ? {
+                title: 'Propriétaire',
+                icon: 'fa-user',
+                items: [
+                    { 
+                        label: 'Owner', 
+                        value: job.attributes.owner,
+                        context: 'attribute-owner'
+                    }
+                ]
+            } : null
+        ].filter(Boolean);
+
+        const dependenciesSection = (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) ? {
+            title: 'Dépendances et Conditions',
+            icon: 'fa-link',
             items: [
-                { label: 'Nom', value: job.name },
-                { label: 'Type', value: job.type },
-                { label: 'Description', value: job.description || 'Non spécifiée' },
-                { label: 'Parent', value: job.parent || 'Aucun (Box racine)' },
-                job.children && job.children.length > 0 ? 
-                    { label: 'Enfants', value: `${job.children.length} job(s)` } : null
+                job.attributes.condition ? { 
+                    label: 'Condition', 
+                    value: job.attributes.condition,
+                    context: 'attribute-condition'
+                } : null,
+                job.dependsOn.length > 0 ? { 
+                    label: 'Dépend de', 
+                    value: job.dependsOn.join(', '),
+                    context: 'general'
+                } : null,
+                job.requiredBy.length > 0 ? { 
+                    label: 'Requis par', 
+                    value: job.requiredBy.join(', '),
+                    context: 'general'
+                } : null
             ].filter(Boolean)
-        },
-        job.attributes.command ? {
-            title: 'Commande',
-            icon: 'fa-terminal',
-            items: [
-                { label: 'Commande', value: job.attributes.command }
-            ]
-        } : null,
-        job.attributes.machine ? {
-            title: 'Machine',
-            icon: 'fa-server',
-            items: [
-                { label: 'Machine', value: job.attributes.machine }
-            ]
-        } : null,
-        job.attributes.owner ? {
-            title: 'Propriétaire',
-            icon: 'fa-user',
-            items: [
-                { label: 'Owner', value: job.attributes.owner }
-            ]
-        } : null
-    ].filter(Boolean);
+        } : null;
 
-    // Section Dépendances et Conditions
-    const dependenciesSection = (job.dependsOn.length > 0 || job.requiredBy.length > 0 || job.attributes.condition) ? {
-        title: 'Dépendances et Conditions',
-        icon: 'fa-link',
-        items: [
-            job.attributes.condition ? { label: 'Condition', value: job.attributes.condition } : null,
-            job.dependsOn.length > 0 ? { label: 'Dépend de', value: job.dependsOn.join(', ') } : null,
-            job.requiredBy.length > 0 ? { label: 'Requis par', value: job.requiredBy.join(', ') } : null
-        ].filter(Boolean)
-    } : null;
+        const schedulingAttributes = ['run_calendar', 'start_times', 'date_conditions', 'exclude_calendar'];
+        const schedulingItems = schedulingAttributes
+            .filter(attr => job.attributes[attr])
+            .map(attr => ({ 
+                label: this.formatAttributeLabel(attr), 
+                value: job.attributes[attr],
+                context: 'attribute-' + attr
+            }));
+        
+        const schedulingSection = schedulingItems.length > 0 ? {
+            title: 'Planification',
+            icon: 'fa-calendar-alt',
+            items: schedulingItems
+        } : null;
 
-    // Section Planification
-    const schedulingAttributes = ['run_calendar', 'start_times', 'date_conditions', 'exclude_calendar'];
-    const schedulingItems = schedulingAttributes
-        .filter(attr => job.attributes[attr])
-        .map(attr => ({ label: this.formatAttributeLabel(attr), value: job.attributes[attr] }));
-    
-    const schedulingSection = schedulingItems.length > 0 ? {
-        title: 'Planification',
-        icon: 'fa-calendar-alt',
-        items: schedulingItems
-    } : null;
+        const commonAttributes = [
+            'command', 'machine', 'owner', 'condition', 'date_conditions', 
+            'start_times', 'run_calendar', 'exclude_calendar', 'description'
+        ];
+        
+        const otherAttributes = Object.entries(job.attributes)
+            .filter(([key]) => !commonAttributes.includes(key))
+            .map(([key, value]) => ({
+                label: this.formatAttributeLabel(key),
+                value: String(value),
+                context: 'attribute-' + key
+            }));
 
-    // Section TOUS les autres attributs
-    const commonAttributes = [
-        'command', 'machine', 'owner', 'condition', 'date_conditions', 
-        'start_times', 'run_calendar', 'exclude_calendar', 'description'
-    ];
-    
-    const otherAttributes = Object.entries(job.attributes)
-        .filter(([key]) => !commonAttributes.includes(key))
-        .map(([key, value]) => ({
-            label: this.formatAttributeLabel(key),
-            value: String(value)
-        }));
+        const otherAttributesSection = otherAttributes.length > 0 ? {
+            title: 'Tous les attributs',
+            icon: 'fa-cogs',
+            items: otherAttributes
+        } : null;
 
-    const otherAttributesSection = otherAttributes.length > 0 ? {
-        title: 'Tous les attributs',
-        icon: 'fa-cogs',
-        items: otherAttributes
-    } : null;
+        let html = '';
 
-    // Générer le HTML
-    let html = '';
+        // recherche par attribut
+        if (isAttributeSearch && searchKey) {
+            const attributeValue = job.attributes[searchKey.toLowerCase()];
+            if (attributeValue) {
+                html += this.generateHighlightedAttributeSection(searchKey, attributeValue, searchValue);
+            }
+        }
 
-    // Sections principales
-    mainSections.forEach(section => {
-        html += this.generateDetailSection(section, highlightIfNeeded);
-    });
+        // surlignage contextuel
+        mainSections.forEach(section => {
+            html += this.generateDetailSection(section, highlightIfNeeded);
+        });
 
-    // Section Dépendances
-    if (dependenciesSection) {
-        html += this.generateDetailSection(dependenciesSection, highlightIfNeeded);
+        if (dependenciesSection) {
+            html += this.generateDetailSection(dependenciesSection, highlightIfNeeded);
+        }
+
+        if (schedulingSection) {
+            html += this.generateDetailSection(schedulingSection, highlightIfNeeded);
+        }
+
+        if (otherAttributesSection) {
+            html += this.generateDetailSection(otherAttributesSection, highlightIfNeeded);
+        }
+
+        return html;
     }
 
-    // Section Planification
-    if (schedulingSection) {
-        html += this.generateDetailSection(schedulingSection, highlightIfNeeded);
-    }
-
-    // Section Tous les autres attributs
-    if (otherAttributesSection) {
-        html += this.generateDetailSection(otherAttributesSection, highlightIfNeeded);
-    }
-
-    return html;
-}
-
-/**
- * Formate le libellé d'un attribut (ex: "run_calendar" → "Run Calendar")
- */
-formatAttributeLabel(attribute) {
-    return attribute
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-}
-
-/**
- * Génère une section de détails
- */
-generateDetailSection(section, highlightIfNeeded) {
-    return `
-        <div class="detail-section">
-            <h4><i class="fas ${section.icon}"></i> ${section.title}</h4>
-            ${section.items.map(item => `
-                <div class="detail-item">
-                    <span class="detail-label">${item.label}:</span>
-                    <span class="detail-value">${highlightIfNeeded(item.value)}</span>
+    generateHighlightedAttributeSection(attributeKey, attributeValue, searchValue) {
+        const formattedKey = this.formatAttributeLabel(attributeKey);
+        const highlightedValue = this.highlightSpecificText(String(attributeValue), searchValue);
+        
+        return `
+            <div class="detail-section search-match-section">
+                <h4><i class="fas fa-search"></i> Attribut correspondant à la recherche</h4>
+                <div class="detail-item highlighted-search-match">
+                    <span class="detail-label">${formattedKey}:</span>
+                    <span class="detail-value">${highlightedValue}</span>
                 </div>
-            `).join('')}
-        </div>
-    `;
-}
+            </div>
+        `;
+    }
+
+    highlightSpecificText(text, searchTerm) {
+        if (!text || !searchTerm) return text;
+        
+        try {
+            const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedTerm})`, 'gi');
+            return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+        } catch (error) {
+            return text;
+        }
+    }
+
+    generateDetailSection(section, highlightIfNeeded) {
+        return `
+            <div class="detail-section">
+                <h4><i class="fas ${section.icon}"></i> ${section.title}</h4>
+                ${section.items.map(item => `
+                    <div class="detail-item">
+                        <span class="detail-label">${item.label}:</span>
+                        <span class="detail-value">${highlightIfNeeded(item.value, item.context)}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    formatAttributeLabel(attribute) {
+        return attribute
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
 
     formatCondition(condition) {
         if (!condition) return '';
@@ -729,8 +796,7 @@ generateDetailSection(section, highlightIfNeeded) {
     }
 }
 
-// initialisation
-console.log('🔍 État du DOM:', {
+console.log('État du DOM:', {
     readyState: document.readyState,
     autosysViewer: window.autosysViewer
 });

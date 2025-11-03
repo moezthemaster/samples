@@ -1,5 +1,7 @@
 .context-menu {
     position: fixed;
+    top: 0;
+    left: 0;
     background: white;
     border: 1px solid #ddd;
     border-radius: 8px;
