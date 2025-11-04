@@ -216,6 +216,7 @@
     border-left-color: #f59e0b !important;
 }
 
+/*
 .compare-mode-active .tree-section {
     flex: 1;
     min-width: 0;
@@ -224,6 +225,7 @@
 .compare-mode-active .details-section {
     flex: 0 0 350px;
 }
+*/
 
 .compare-mode .vs-separator {
     display: none;

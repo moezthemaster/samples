@@ -12,6 +12,7 @@ export class EventManager {
         this.setupComparisonEvents();
         this.setupNewUploadSystem();
         this.setupAdvancedFilters();
+        this.setupResizeHandlers();
         console.log('Tous les événements initialisés');
     }
 
@@ -425,6 +426,53 @@ export class EventManager {
                 this.viewer.resetView();
             });
         }
+    }
+
+    setupResizeHandlers() {
+        const resizer = document.getElementById('treeResizer');
+        const mainContent = document.querySelector('.main-content');
+        const treeSection = document.querySelector('.tree-section');
+        const detailsSection = document.querySelector('.details-section');
+        const indicator = document.createElement('div');
+        
+        indicator.className = 'resize-indicator';
+        document.body.appendChild(indicator);
+
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            mainContent.classList.add('resizing');
+            indicator.classList.add('visible');
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', stopResize);
+        });
+
+        const handleMouseMove = (e) => {
+            if (!isResizing) return;
+
+            const containerRect = mainContent.getBoundingClientRect();
+            const treeWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+            const constrainedWidth = Math.max(20, Math.min(80, treeWidth));
+
+            indicator.style.left = (containerRect.left + (constrainedWidth / 100) * containerRect.width) + 'px';
+
+            treeSection.style.flex = constrainedWidth;
+            detailsSection.style.flex = 100 - constrainedWidth;
+        };
+
+        const stopResize = () => {
+            isResizing = false;
+            mainContent.classList.remove('resizing');
+            indicator.classList.remove('visible');
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', stopResize);
+        };
+
+        resizer.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+        });
     }
 
     setupModalEvents() {

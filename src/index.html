@@ -121,42 +121,43 @@
 
             <!-- Main Content -->
             <div class="main-content">
-                <div class="content-area">
-                    <!-- Tree -->
-                    <div class="tree-section">
-                        <div class="section-header">
-                            <div class="section-title">
-                                <h3><i class="fas fa-sitemap"></i> Arborescence des Jobs</h3>
-                                <!--div class="file-status" id="fileStatus">
-                                    <span class="file-info" id="fileInfo">Aucun fichier</span>
-                                </div-->
-                                <div class="compare-status hidden" id="compareStatus">
-                                    <!-- Rempli dynamiquement -->
-                                </div>
+                <!-- Tree Section -->
+                <div class="tree-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <h3><i class="fas fa-sitemap"></i> Arborescence des Jobs</h3>
+                            <!--div class="file-status" id="fileStatus">
+                                <span class="file-info" id="fileInfo">Aucun fichier</span>
+                            </div-->
+                            <div class="compare-status hidden" id="compareStatus">
+                                <!-- Rempli dynamiquement -->
                             </div>
-                            <span class="counter" id="jobCounter">0 jobs</span>
                         </div>
-                        <div id="treeContainer" class="tree-container">
-                            <div class="empty-state">
-                                <i class="fas fa-folder-open"></i>
-                                <h3>Aucun fichier JIL chargé</h3>
-                                <p>Chargez un fichier JIL pour commencer</p>
-                            </div>
+                        <span class="counter" id="jobCounter">0 jobs</span>
+                    </div>
+                    <div id="treeContainer" class="tree-container">
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open"></i>
+                            <h3>Aucun fichier JIL chargé</h3>
+                            <p>Chargez un fichier JIL pour commencer</p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Détails -->
-                    <div class="details-section">
-                        <div class="section-header">
-                            <h3><i class="fas fa-info-circle"></i> Détails du Job</h3>
+                <!-- Resizer -->
+                <div class="section-resizer" id="treeResizer"></div>
+
+                <!-- Details Section -->
+                <div class="details-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-info-circle"></i> Détails du Job</h3>
+                    </div>
+                    <div id="detailsPanel" class="details-panel">
+                        <div class="empty-details">
+                            <i class="fas fa-mouse-pointer"></i>
+                            <p>Sélectionnez un job pour voir ses détails</p>
                         </div>
-                        <div id="detailsPanel" class="details-panel">
-                            <div class="empty-details">
-                                <i class="fas fa-mouse-pointer"></i>
-                                <p>Sélectionnez un job pour voir ses détails</p>
-                            </div>
-                            <div id="detailsContent" class="details-content hidden"></div>
-                        </div>
+                        <div id="detailsContent" class="details-content hidden"></div>
                     </div>
                 </div>
             </div>

@@ -1,0 +1,129 @@
+/* Layout principal avec redimensionnement - CONSERVER LE LAYOUT EXISTANT */
+.main-content {
+    display: flex;
+    height: calc(100vh - var(--header-height));
+    position: relative;
+    width: 100%;
+}
+
+.tree-section {
+    flex: 3;
+    min-width: 50%;
+    max-width: 80%;
+    background: white;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    transition: flex 0.2s ease;
+}
+
+.details-section {
+    flex: 1;
+    min-width: 200px;
+    max-width: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    transition: flex 0.2s ease;
+}
+
+.section-resizer {
+    width: 8px;
+    background: transparent;
+    cursor: col-resize;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    position: relative;
+}
+
+.section-resizer:hover {
+    background: var(--primary-color);
+}
+
+.section-resizer::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 40px;
+    background: var(--border-color);
+    border-radius: 1px;
+    transition: all 0.2s ease;
+}
+
+.section-resizer:hover::before {
+    background: var(--primary-color);
+    width: 3px;
+    height: 60px;
+}
+
+.section-resizer.dragging {
+    background: var(--primary-color);
+}
+
+.section-resizer.dragging::before {
+    background: white;
+    width: 3px;
+    height: 80px;
+}
+
+/* États pendant le drag */
+.main-content.resizing {
+    cursor: col-resize;
+    user-select: none;
+}
+
+.main-content.resizing * {
+    pointer-events: none;
+}
+
+/* Indicateur visuel pendant le redimensionnement */
+.resize-indicator {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--primary-color);
+    z-index: 1000;
+    pointer-events: none;
+    display: none;
+}
+
+.resize-indicator.visible {
+    display: block;
+}
+
+/* Assurer que le contenu reste utilisable */
+.tree-container, .details-panel {
+    flex: 1;
+    overflow: auto;
+    height: calc(100% - 60px); /* Hauteur moins le header */
+}
+
+.section-header {
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 60px;
+    box-sizing: border-box;
+}
+
+/* Responsive - empêcher le redimensionnement trop petit */
+@media (max-width: 768px) {
+    .section-resizer {
+        display: none;
+    }
+    
+    .tree-section, .details-section {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}
