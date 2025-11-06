@@ -1,9 +1,10 @@
-/* Layout principal avec redimensionnement - CONSERVER LE LAYOUT EXISTANT */
+/* Layout principal avec redimensionnement - ESPACES UNIFORMES */
 .main-content {
     display: flex;
     height: calc(100vh - var(--header-height));
     position: relative;
     width: 100%;
+    padding: 20px; /* Espace sur tous les côtés */
 }
 
 .tree-section {
@@ -11,7 +12,8 @@
     min-width: 50%;
     max-width: 80%;
     background: white;
-    border-right: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     transition: flex 0.2s ease;
@@ -22,6 +24,8 @@
     min-width: 200px;
     max-width: 50%;
     background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
     display: flex;
     flex-direction: column;
     transition: flex 0.2s ease;

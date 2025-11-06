@@ -329,3 +329,32 @@
         gap: 12px;
     }
 }
+
+
+@media (max-width: 1280px) {
+    .content-wrapper {
+        gap: 16px;
+        padding: 16px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .content-wrapper {
+        gap: 12px;
+        padding: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .content-wrapper {
+        gap: 8px;
+        padding: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .content-wrapper {
+        gap: 6px;
+        padding: 6px;
+    }
+}

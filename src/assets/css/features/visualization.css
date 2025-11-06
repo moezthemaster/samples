@@ -4,11 +4,11 @@
     background: var(--secondary-color);
     overflow: hidden;
     height: calc(100vh - var(--header-height));
+    padding: 20px; /* Espace sur tous les côtés */
 }
 
 .content-area {
     flex: 1;
-    padding: 20px;
     display: flex;
     gap: 20px;
     overflow: hidden;
